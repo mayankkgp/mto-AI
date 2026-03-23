@@ -4,12 +4,12 @@
  */
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import Layout from './components/Layout';
 import EnquiryList from './components/EnquiryList';
 import EnquiryDetail from './components/EnquiryDetail';
 import { Enquiry } from './types';
 import { MOCK_ENQUIRIES } from './mockData';
-import { AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('enquiry');
@@ -62,28 +62,48 @@ export default function App() {
   return (
     <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
       {activeSection === 'enquiry' ? (
-        <EnquiryList 
-          enquiries={enquiries} 
-          onEnquiryClick={handleEnquiryClick}
-          onCreateNew={handleCreateNew}
-        />
+        <div className="flex-1 flex overflow-hidden">
+          {/* Master View (List) */}
+          <motion.div 
+            layout
+            initial={false}
+            animate={{ width: isDetailOpen ? '35%' : '100%' }}
+            className="h-full overflow-hidden flex flex-col"
+          >
+            <EnquiryList 
+              enquiries={enquiries} 
+              onEnquiryClick={handleEnquiryClick}
+              onCreateNew={handleCreateNew}
+              isCompact={isDetailOpen}
+            />
+          </motion.div>
+
+          {/* Detail View (Pane) */}
+          <AnimatePresence>
+            {isDetailOpen && (
+              <motion.div 
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: '65%', opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="h-full overflow-hidden"
+              >
+                <EnquiryDetail 
+                  enquiry={selectedEnquiry}
+                  onClose={() => setIsDetailOpen(false)}
+                  onSave={handleSave}
+                  onConvert={handleConvert}
+                  onDrop={handleDrop}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-gray-400 italic text-sm">
           {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)} module is under development.
         </div>
       )}
-
-      <AnimatePresence>
-        {isDetailOpen && (
-          <EnquiryDetail 
-            enquiry={selectedEnquiry}
-            onClose={() => setIsDetailOpen(false)}
-            onSave={handleSave}
-            onConvert={handleConvert}
-            onDrop={handleDrop}
-          />
-        )}
-      </AnimatePresence>
     </Layout>
   );
 }

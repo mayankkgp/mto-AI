@@ -58,6 +58,50 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
+  const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
+  const revActionInputRef = useRef<HTMLInputElement>(null);
+  const supActionInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clipboard Paste Support
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const dataUrl = event.target?.result as string;
+              setFormData(prev => ({
+                ...prev,
+                files: [...(prev.files || []), dataUrl]
+              }));
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
+  // Helper for Indian Currency Formatting in Input
+  const formatInputCurrency = (val: number | string) => {
+    if (val === undefined || val === null || val === '') return '';
+    const num = val.toString().replace(/,/g, '');
+    if (isNaN(Number(num))) return '';
+    return new Intl.NumberFormat('en-IN').format(Number(num));
+  };
+
+  const parseInputCurrency = (val: string) => {
+    return Number(val.replace(/,/g, '')) || 0;
+  };
 
   // Auto-calculation for Expected Value
   useEffect(() => {
@@ -66,6 +110,29 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
   }, [formData.orderValue, formData.conversionProbability]);
 
   // Auto-fill logic for Customer
+  useEffect(() => {
+    setFormData(enquiry || {
+      customerName: '',
+      city: '',
+      poc: '',
+      contact: '',
+      leadOverview: '',
+      leadDetails: '',
+      type: 'MTO',
+      leadChannel: 'Direct',
+      orderValue: 0,
+      conversionProbability: 50,
+      expectedValue: 0,
+      leadDate: new Date().toISOString().split('T')[0],
+      leadSource: '',
+      revenueRoles: [],
+      supplyRoles: [],
+      revenueActions: [],
+      supplyActions: [],
+      status: 'Active'
+    });
+  }, [enquiry]);
+
   const handleCustomerSelect = (name: string) => {
     const customer = MOCK_CUSTOMERS.find(c => c.name === name);
     if (customer) {
@@ -99,6 +166,72 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
       setFormData(prev => ({ ...prev, supplyActions: [...(prev.supplyActions || []), item] }));
     }
     setNewAction({ text: '', date: '', remark: '', type });
+    
+    // Focus back to the correct input
+    if (type === 'revenue') {
+      revActionInputRef.current?.focus();
+    } else {
+      supActionInputRef.current?.focus();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      Array.from(selectedFiles).forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setFormData(prev => ({
+            ...prev,
+            files: [...(prev.files || []), dataUrl]
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles && droppedFiles.length > 0) {
+      Array.from(droppedFiles).forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setFormData(prev => ({
+            ...prev,
+            files: [...(prev.files || []), dataUrl]
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeFile = (fileName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      files: prev.files?.filter(f => f !== fileName)
+    }));
+  };
+
+  const handleDownload = (file: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = file;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const updateActionItem = (id: string, type: 'revenue' | 'supply', field: keyof ActionItem, value: string) => {
+    const listKey = type === 'revenue' ? 'revenueActions' : 'supplyActions';
+    setFormData(prev => ({
+      ...prev,
+      [listKey]: prev[listKey]?.map(a => a.id === id ? { ...a, [field]: value } : a)
+    }));
   };
 
   const toggleActionCompletion = (id: string, type: 'revenue' | 'supply') => {
@@ -110,15 +243,9 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
-      <motion.div 
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        className="w-full max-w-4xl h-full bg-white shadow-2xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
+    <div className="h-full bg-white flex flex-col border-l border-gray-200">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-gray-800 uppercase tracking-tight">
               {enquiry ? `Edit Enquiry: ${enquiry.id}` : 'Create New Enquiry'}
@@ -167,94 +294,119 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 no-scrollbar">
-          {/* Section A: Overview */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-1">
-              <FileText size={14} className="text-emerald-600" />
-              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Overview</h3>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              {/* Customer Info */}
-              <div className="col-span-1 space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Customer Name *</label>
-                  <div className="relative">
-                    <input 
-                      list="customers"
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                      value={formData.customerName}
-                      onChange={(e) => handleCustomerSelect(e.target.value)}
-                    />
-                    <datalist id="customers">
-                      {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
-                    </datalist>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+        <div className="flex-1 overflow-hidden grid grid-cols-[1fr_320px] no-scrollbar">
+          {/* Left: Overview (Scrollable) */}
+          <div className="overflow-y-auto p-4 border-r border-gray-100 no-scrollbar">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-1">
+                <FileText size={14} className="text-emerald-600" />
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Overview</h3>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Row 1: Customer Info */}
+                <div className="grid grid-cols-4 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">City *</label>
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Customer Name *</label>
+                    <div className="relative">
+                      <input 
+                        list="customers"
+                        className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        value={formData.customerName}
+                        onChange={(e) => handleCustomerSelect(e.target.value)}
+                      />
+                      <datalist id="customers">
+                        {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
+                      </datalist>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
                     <input 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
                       value={formData.city}
                       onChange={(e) => setFormData({...formData, city: e.target.value})}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">POC *</label>
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
                     <input 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
                       value={formData.poc}
                       onChange={(e) => setFormData({...formData, poc: e.target.value})}
                     />
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Contact *</label>
-                  <input 
-                    className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
-                    value={formData.contact}
-                    onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              {/* Lead Info */}
-              <div className="col-span-1 space-y-3 border-x border-gray-100 px-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Lead Overview *</label>
-                  <input 
-                    className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
-                    value={formData.leadOverview}
-                    onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Lead Details</label>
-                  <textarea 
-                    rows={3}
-                    className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none resize-none"
-                    value={formData.leadDetails}
-                    onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Type *</label>
-                    <select 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
-                      value={formData.type}
-                      onChange={(e) => setFormData({...formData, type: e.target.value as EnquiryType})}
-                    >
-                      <option value="MTO">MTO</option>
-                      <option value="Ready">Ready</option>
-                    </select>
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
+                    <input 
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                      value={formData.contact}
+                      onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Lead Info */}
+                <div className="grid grid-cols-2 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Overview *</label>
+                    <textarea 
+                      rows={2}
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                      value={formData.leadOverview}
+                      onChange={(e) => {
+                        setFormData({...formData, leadOverview: e.target.value});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      placeholder="Brief overview of the lead..."
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Channel</label>
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Details</label>
+                    <textarea 
+                      rows={2}
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                      value={formData.leadDetails}
+                      onChange={(e) => {
+                        setFormData({...formData, leadDetails: e.target.value});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      placeholder="Detailed requirements, specifications, etc..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Type *</label>
+                    <div className="flex bg-white border border-gray-200 rounded p-0.5">
+                      {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setFormData({...formData, type: t})}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${
+                            formData.type === t 
+                            ? 'bg-emerald-600 text-white shadow-sm' 
+                            : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Channel</label>
                     <select 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
                       value={formData.leadChannel}
                       onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                     >
@@ -264,68 +416,62 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                     </select>
                   </div>
                 </div>
-              </div>
 
-              {/* Commercials */}
-              <div className="col-span-1 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                {/* Row 3: Commercials */}
+                <div className="grid grid-cols-5 gap-4 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100/50">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Order Value (₹)</label>
+                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Order Value (₹)</label>
                     <input 
-                      type="number"
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs font-bold outline-none"
-                      value={formData.orderValue}
-                      onChange={(e) => setFormData({...formData, orderValue: Number(e.target.value)})}
+                      type="text"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
+                      value={formatInputCurrency(formData.orderValue || 0)}
+                      onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Prob (%)</label>
+                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Prob (%)</label>
                     <select 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
                       value={formData.conversionProbability}
                       onChange={(e) => setFormData({...formData, conversionProbability: Number(e.target.value)})}
                     >
                       {[10, 30, 50, 70, 90].map(p => <option key={p} value={p}>{p}%</option>)}
                     </select>
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Expected Value</label>
-                  <div className="w-full px-2 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                    {formatIndianCurrency(formData.expectedValue || 0)}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Lead Date</label>
+                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Expected Value</label>
+                    <div className="w-full px-2 py-1.5 bg-emerald-100/50 border border-emerald-200 text-emerald-800 rounded text-[11px] font-bold">
+                      {formatIndianCurrency(formData.expectedValue || 0)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Lead Date</label>
                     <input 
                       type="date"
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-[10px] outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[10px] outline-none"
                       value={formData.leadDate}
                       onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Lead Source</label>
+                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Lead Source</label>
                     <input 
-                      className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
                       value={formData.leadSource}
                       onChange={(e) => setFormData({...formData, leadSource: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Roles & Files */}
-            <div className="grid grid-cols-2 gap-6 mt-4">
-              <div className="space-y-3">
+              {/* Roles & Files */}
+              <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Revenue Role *</label>
-                    <div className="flex flex-wrap gap-1 p-1.5 bg-gray-50 border border-gray-200 rounded min-h-[32px]">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
                       {formData.revenueRoles?.map(uid => (
-                        <span key={uid} className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
+                        <span key={uid} className="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
                           {MOCK_USERS.find(u => u.id === uid)?.name}
                           <button onClick={() => setFormData({...formData, revenueRoles: formData.revenueRoles?.filter(id => id !== uid)})}><X size={10} /></button>
                         </span>
@@ -344,10 +490,10 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Supply Role</label>
-                    <div className="flex flex-wrap gap-1 p-1.5 bg-gray-50 border border-gray-200 rounded min-h-[32px]">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Supply Role</label>
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
                       {formData.supplyRoles?.map(uid => (
-                        <span key={uid} className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
+                        <span key={uid} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
                           {MOCK_USERS.find(u => u.id === uid)?.name}
                           <button onClick={() => setFormData({...formData, supplyRoles: formData.supplyRoles?.filter(id => id !== uid)})}><X size={10} /></button>
                         </span>
@@ -366,113 +512,341 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Files & Attachments</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center gap-2 hover:border-emerald-300 transition-colors cursor-pointer bg-gray-50">
-                  <Paperclip size={20} className="text-gray-400" />
-                  <p className="text-[10px] text-gray-500 font-medium">Drag & Drop or Paste Image</p>
-                  <button className="text-[9px] font-bold text-emerald-600 uppercase">Browse Files</button>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Files & Attachments</label>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    multiple 
+                    onChange={handleFileChange} 
+                  />
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    className="border border-dashed border-gray-200 rounded p-3 flex flex-col items-center justify-center gap-1 hover:border-emerald-300 transition-colors cursor-pointer bg-gray-50"
+                  >
+                    <Paperclip size={16} className="text-gray-400" />
+                    <p className="text-[9px] text-gray-500 font-medium text-center">Drag & Drop, Click to Upload, or Paste from Clipboard</p>
+                    <button className="text-[9px] font-bold text-emerald-600 uppercase">Browse Files</button>
+                  </div>
+                  
+                  {/* File List */}
+                  {formData.files && formData.files.length > 0 && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {formData.files.map((file, idx) => {
+                        const isImage = file.startsWith('data:image');
+                        const fileName = isImage ? `Image ${idx + 1}` : file;
+                        
+                        return (
+                          <div key={idx} className="relative group bg-gray-50 rounded border border-gray-100 overflow-hidden aspect-square flex flex-col">
+                            {isImage ? (
+                              <img 
+                                src={file} 
+                                alt={fileName} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="flex-1 flex items-center justify-center bg-gray-100">
+                                <FileText size={24} className="text-gray-400" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(file, fileName);
+                                }}
+                                className="p-1.5 bg-white/20 hover:bg-white/40 rounded text-white backdrop-blur-sm"
+                              >
+                                <Download size={14} />
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeFile(file);
+                                }}
+                                className="p-1.5 bg-red-500/20 hover:bg-red-500/40 rounded text-white backdrop-blur-sm"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            <div className="p-1 bg-white/90 backdrop-blur-sm border-t border-gray-100">
+                              <p className="text-[8px] font-bold text-gray-600 truncate">{fileName}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Section B: Action Items */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* Revenue Actions */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 border-b border-gray-100 pb-1">
-                <CheckCircle2 size={14} className="text-red-500" />
-                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Revenue Action Items</h3>
-              </div>
-              
-              {/* Inline Add */}
-              <div className="flex gap-1 bg-gray-50 p-2 rounded border border-gray-200">
-                <input 
-                  placeholder="Action..."
-                  className="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none"
-                  value={newAction.type === 'revenue' ? newAction.text : ''}
-                  onChange={(e) => setNewAction({...newAction, text: e.target.value, type: 'revenue'})}
-                />
-                <input 
-                  type="date"
-                  className="w-24 bg-white border border-gray-200 rounded px-1 py-1 text-[10px] outline-none"
-                  value={newAction.type === 'revenue' ? newAction.date : ''}
-                  onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'revenue'})}
-                />
-                <button 
-                  onClick={() => addActionItem('revenue')}
-                  className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-
-              {/* List */}
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
-                {formData.revenueActions?.map(item => (
-                  <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
-                    <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5">
-                      {item.isCompleted ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Circle size={16} className="text-gray-300 hover:text-emerald-400" />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <p className={`text-[11px] font-bold truncate ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.action}</p>
-                        <span className="text-[9px] font-bold text-red-500 shrink-0">{item.dueDate}</span>
-                      </div>
-                      {item.remark && <p className="text-[10px] text-gray-500 mt-0.5 italic">{item.remark}</p>}
+          {/* Right: Action Items (Pinned/Sticky) */}
+          <div className="overflow-y-auto p-4 bg-gray-50/50 no-scrollbar border-l border-gray-100">
+            <div className="space-y-6">
+              {/* Revenue Actions */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-gray-200 pb-1">
+                  <CheckCircle2 size={14} className="text-red-500" />
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Revenue Actions</h3>
+                </div>
+                
+                {/* Expanded Add Task */}
+                <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-2">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
+                    <textarea 
+                      ref={revActionInputRef as any}
+                      rows={1}
+                      placeholder="What needs to be done?"
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none focus:border-red-400 resize-none"
+                      value={newAction.type === 'revenue' ? newAction.text : ''}
+                      onChange={(e) => {
+                        setNewAction({...newAction, text: e.target.value, type: 'revenue'});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
+                      <input 
+                        type="date"
+                        className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none focus:border-red-400"
+                        value={newAction.type === 'revenue' ? newAction.date : ''}
+                        onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'revenue'})}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button 
+                        onClick={() => addActionItem('revenue')}
+                        className="w-full bg-red-500 text-white py-1 rounded hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold"
+                      >
+                        <Plus size={14} /> ADD TASK
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
+                    <textarea 
+                      rows={1}
+                      placeholder="Additional notes..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[10px] outline-none focus:border-red-400 italic resize-none"
+                      value={newAction.type === 'revenue' ? newAction.remark : ''}
+                      onChange={(e) => {
+                        setNewAction({...newAction, remark: e.target.value, type: 'revenue'});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
+                </div>
 
-            {/* Supply Actions */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 border-b border-gray-100 pb-1">
-                <Truck size={14} className="text-blue-500" />
-                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Supply Action Items</h3>
-              </div>
-              
-              {/* Inline Add */}
-              <div className="flex gap-1 bg-gray-50 p-2 rounded border border-gray-200">
-                <input 
-                  placeholder="Action..."
-                  className="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none"
-                  value={newAction.type === 'supply' ? newAction.text : ''}
-                  onChange={(e) => setNewAction({...newAction, text: e.target.value, type: 'supply'})}
-                />
-                <input 
-                  type="date"
-                  className="w-24 bg-white border border-gray-200 rounded px-1 py-1 text-[10px] outline-none"
-                  value={newAction.type === 'supply' ? newAction.date : ''}
-                  onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'supply'})}
-                />
-                <button 
-                  onClick={() => addActionItem('supply')}
-                  className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
+                {/* List */}
+                <div className="space-y-1.5">
+                  {formData.revenueActions?.map(item => (
+                    <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
+                      <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5">
+                        {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                            <input 
+                              autoFocus
+                              className="flex-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none"
+                              value={item.action}
+                              onChange={(e) => updateActionItem(item.id, 'revenue', 'action', e.target.value)}
+                              onBlur={() => setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                            />
+                          ) : (
+                            <p 
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                              className={`text-[11px] font-bold flex-1 break-words ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                            >
+                              {item.action}
+                            </p>
+                          )}
 
-              {/* List */}
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
-                {formData.supplyActions?.map(item => (
-                  <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
-                    <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5">
-                      {item.isCompleted ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Circle size={16} className="text-gray-300 hover:text-emerald-400" />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <p className={`text-[11px] font-bold truncate ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.action}</p>
-                        <span className="text-[9px] font-bold text-blue-500 shrink-0">{item.dueDate}</span>
+                          {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                            <input 
+                              type="date"
+                              autoFocus
+                              className="bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
+                              value={item.dueDate}
+                              onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
+                              onBlur={() => setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                            />
+                          ) : (
+                            <span 
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                              className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
+                            >
+                              {item.dueDate}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                          <input 
+                            autoFocus
+                            placeholder="Add remark..."
+                            className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none"
+                            value={item.remark}
+                            onChange={(e) => updateActionItem(item.id, 'revenue', 'remark', e.target.value)}
+                            onBlur={() => setEditingAction(null)}
+                            onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                          />
+                        ) : (
+                          <p 
+                            onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                            className={`text-[10px] mt-0.5 italic ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                          >
+                            {item.remark || (item.isCompleted ? '' : '+ Add remark')}
+                          </p>
+                        )}
                       </div>
-                      {item.remark && <p className="text-[10px] text-gray-500 mt-0.5 italic">{item.remark}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Supply Actions */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-gray-200 pb-1">
+                  <Truck size={14} className="text-blue-500" />
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Supply Actions</h3>
+                </div>
+                
+                {/* Expanded Add Task */}
+                <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-2">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
+                    <textarea 
+                      ref={supActionInputRef as any}
+                      rows={1}
+                      placeholder="What needs to be done?"
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-400 resize-none"
+                      value={newAction.type === 'supply' ? newAction.text : ''}
+                      onChange={(e) => {
+                        setNewAction({...newAction, text: e.target.value, type: 'supply'});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
+                      <input 
+                        type="date"
+                        className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none focus:border-blue-400"
+                        value={newAction.type === 'supply' ? newAction.date : ''}
+                        onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'supply'})}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button 
+                        onClick={() => addActionItem('supply')}
+                        className="w-full bg-blue-500 text-white py-1 rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold"
+                      >
+                        <Plus size={14} /> ADD TASK
+                      </button>
                     </div>
                   </div>
-                ))}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
+                    <textarea 
+                      rows={1}
+                      placeholder="Additional notes..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[10px] outline-none focus:border-blue-400 italic resize-none"
+                      value={newAction.type === 'supply' ? newAction.remark : ''}
+                      onChange={(e) => {
+                        setNewAction({...newAction, remark: e.target.value, type: 'supply'});
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* List */}
+                <div className="space-y-1.5">
+                  {formData.supplyActions?.map(item => (
+                    <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
+                      <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5">
+                        {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                            <input 
+                              autoFocus
+                              className="flex-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none"
+                              value={item.action}
+                              onChange={(e) => updateActionItem(item.id, 'supply', 'action', e.target.value)}
+                              onBlur={() => setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                            />
+                          ) : (
+                            <p 
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                              className={`text-[11px] font-bold flex-1 break-words ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                            >
+                              {item.action}
+                            </p>
+                          )}
+
+                          {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                            <input 
+                              type="date"
+                              autoFocus
+                              className="bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
+                              value={item.dueDate}
+                              onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
+                              onBlur={() => setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                            />
+                          ) : (
+                            <span 
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                              className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
+                            >
+                              {item.dueDate}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                          <input 
+                            autoFocus
+                            placeholder="Add remark..."
+                            className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none"
+                            value={item.remark}
+                            onChange={(e) => updateActionItem(item.id, 'supply', 'remark', e.target.value)}
+                            onBlur={() => setEditingAction(null)}
+                            onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                          />
+                        ) : (
+                          <p 
+                            onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                            className={`text-[10px] mt-0.5 italic ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                          >
+                            {item.remark || (item.isCompleted ? '' : '+ Add remark')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -522,7 +896,6 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
             </div>
           )}
         </AnimatePresence>
-      </motion.div>
     </div>
   );
 }
