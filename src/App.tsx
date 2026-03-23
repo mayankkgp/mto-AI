@@ -34,7 +34,7 @@ export default function App() {
     } else {
       setEnquiries([enq, ...enquiries]);
     }
-    setIsDetailOpen(false);
+    setSelectedEnquiry(enq);
   };
 
   const handleConvert = (enq: Enquiry) => {
@@ -45,8 +45,8 @@ export default function App() {
       orderId: `ORD-${enq.id.split('-')[1]}`
     };
     setEnquiries(enquiries.map(e => e.id === enq.id ? updatedEnq : e));
-    setIsDetailOpen(false);
-    alert(`Enquiry ${enq.id} converted to Order ${updatedEnq.orderId}`);
+    setSelectedEnquiry(updatedEnq);
+    // alert(`Enquiry ${enq.id} converted to Order ${updatedEnq.orderId}`);
   };
 
   const handleDrop = (enq: Enquiry, reason: string) => {
@@ -56,7 +56,7 @@ export default function App() {
       dropReason: reason
     };
     setEnquiries(enquiries.map(e => e.id === enq.id ? updatedEnq : e));
-    setIsDetailOpen(false);
+    setSelectedEnquiry(updatedEnq);
   };
 
   return (

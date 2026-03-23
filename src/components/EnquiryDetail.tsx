@@ -55,6 +55,36 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
     }
   );
 
+  useEffect(() => {
+    if (enquiry) {
+      setFormData(enquiry);
+    } else {
+      setFormData({
+        id: `ENQ-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        customerName: '',
+        city: '',
+        poc: '',
+        contact: '',
+        leadOverview: '',
+        leadDetails: '',
+        type: 'MTO',
+        revenueRoles: ['u1'],
+        supplyRoles: [],
+        orderValue: 0,
+        conversionProbability: 50,
+        expectedValue: 0,
+        leadDate: new Date().toISOString().split('T')[0],
+        leadChannel: 'Direct',
+        leadSource: '',
+        status: 'Active',
+        createdOn: new Date().toISOString().split('T')[0],
+        revenueActions: [],
+        supplyActions: [],
+        files: []
+      });
+    }
+  }, [enquiry]);
+
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
@@ -294,7 +324,10 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden grid grid-cols-[1fr_320px] no-scrollbar">
+        <div 
+          className="flex-1 overflow-hidden grid no-scrollbar transition-[grid-template-columns] duration-500 ease-in-out"
+          style={{ gridTemplateColumns: !enquiry ? '70% 30%' : '35% 65%' }}
+        >
           {/* Left: Overview (Scrollable) */}
           <div className="overflow-y-auto p-4 border-r border-gray-100 no-scrollbar">
             <div className="space-y-6">
@@ -305,7 +338,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
               
               <div className="space-y-6">
                 {/* Row 1: Customer Info */}
-                <div className="grid grid-cols-4 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+                <div className={`grid ${!enquiry ? 'grid-cols-4' : 'grid-cols-1'} gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100 transition-all duration-500`}>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Customer Name *</label>
                     <div className="relative">
@@ -347,7 +380,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                 </div>
 
                 {/* Row 2: Lead Info */}
-                <div className="grid grid-cols-2 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100 transition-all duration-500`}>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Overview *</label>
                     <textarea 
@@ -418,7 +451,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                 </div>
 
                 {/* Row 3: Commercials */}
-                <div className="grid grid-cols-5 gap-4 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100/50">
+                <div className={`grid ${!enquiry ? 'grid-cols-5' : 'grid-cols-2'} gap-4 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100/50 transition-all duration-500`}>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-emerald-700 uppercase">Order Value (₹)</label>
                     <input 
@@ -466,7 +499,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
 
               {/* Roles & Files */}
               <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-3">
-                <div className="grid grid-cols-2 gap-4">
+                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-4 transition-all duration-500`}>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
                     <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
@@ -587,265 +620,278 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
           </div>
 
           {/* Right: Action Items (Pinned/Sticky) */}
-          <div className="overflow-y-auto p-4 bg-gray-50/50 no-scrollbar border-l border-gray-100">
-            <div className="space-y-6">
-              {/* Revenue Actions */}
+          <div className="flex flex-col bg-gray-50/50 overflow-hidden border-l border-gray-100">
+            {/* Unified Task Creation */}
+            <div className="p-4 border-b border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus size={14} className="text-emerald-600" />
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Add New Action Item</h3>
+              </div>
+              
               <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-gray-200 pb-1">
-                  <CheckCircle2 size={14} className="text-red-500" />
-                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Revenue Actions</h3>
-                </div>
-                
-                {/* Expanded Add Task */}
-                <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-2">
+                <div className="grid grid-cols-[1fr_auto] gap-3">
                   <div className="space-y-1">
                     <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
                     <textarea 
-                      ref={revActionInputRef as any}
                       rows={1}
                       placeholder="What needs to be done?"
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none focus:border-red-400 resize-none"
-                      value={newAction.type === 'revenue' ? newAction.text : ''}
+                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
+                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                      }`}
+                      value={newAction.text}
                       onChange={(e) => {
-                        setNewAction({...newAction, text: e.target.value, type: 'revenue'});
+                        setNewAction({...newAction, text: e.target.value});
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
                       }}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
-                      <input 
-                        type="date"
-                        className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none focus:border-red-400"
-                        value={newAction.type === 'revenue' ? newAction.date : ''}
-                        onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'revenue'})}
-                      />
-                    </div>
-                    <div className="flex items-end">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Type *</label>
+                    <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200 h-[30px]">
                       <button 
-                        onClick={() => addActionItem('revenue')}
-                        className="w-full bg-red-500 text-white py-1 rounded hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold"
+                        onClick={() => setNewAction({...newAction, type: 'revenue'})}
+                        className={`px-3 text-[9px] font-bold rounded transition-all ${
+                          newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                        }`}
                       >
-                        <Plus size={14} /> ADD TASK
+                        REVENUE
+                      </button>
+                      <button 
+                        onClick={() => setNewAction({...newAction, type: 'supply'})}
+                        className={`px-3 text-[9px] font-bold rounded transition-all ${
+                          newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        SUPPLY
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
+                    <input 
+                      type="date"
+                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors ${
+                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                      }`}
+                      value={newAction.date}
+                      onChange={(e) => setNewAction({...newAction, date: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
                     <textarea 
                       rows={1}
                       placeholder="Additional notes..."
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[10px] outline-none focus:border-red-400 italic resize-none"
-                      value={newAction.type === 'revenue' ? newAction.remark : ''}
+                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors ${
+                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                      }`}
+                      value={newAction.remark}
                       onChange={(e) => {
-                        setNewAction({...newAction, remark: e.target.value, type: 'revenue'});
+                        setNewAction({...newAction, remark: e.target.value});
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
                       }}
                     />
                   </div>
+                  <div className="flex items-end">
+                    <button 
+                      onClick={() => addActionItem(newAction.type)}
+                      className={`w-full py-1.5 rounded text-white transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold shadow-sm ${
+                        newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                      }`}
+                    >
+                      <Plus size={14} /> CREATE TASK
+                    </button>
+                  </div>
                 </div>
+              </div>
+            </div>
 
-                {/* List */}
-                <div className="space-y-1.5">
-                  {formData.revenueActions?.map(item => (
-                    <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
-                      <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5">
-                        {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
-                            <input 
+            {/* Side-by-Side Lists */}
+            <div className="flex-1 grid grid-cols-2 overflow-hidden">
+              {/* Revenue Column */}
+              <div className="flex flex-col border-r border-gray-200 overflow-hidden">
+                <div className="px-4 py-2 bg-red-50/50 border-b border-red-100 flex items-center gap-2 shrink-0">
+                  <CheckCircle2 size={12} className="text-red-500" />
+                  <h3 className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Revenue Actions</h3>
+                  <span className="ml-auto text-[9px] font-bold text-red-400 bg-white px-1.5 py-0.5 rounded-full border border-red-100">
+                    {formData.revenueActions?.filter(a => !a.isCompleted).length} Active
+                  </span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+                  {[...(formData.revenueActions || [])]
+                    .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
+                    .map(item => (
+                      <div key={item.id} className={`flex items-start gap-2 p-2 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}>
+                        <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5 shrink-0">
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                              <textarea 
+                                autoFocus
+                                rows={1}
+                                className="flex-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                value={item.action}
+                                onChange={(e) => {
+                                  updateActionItem(item.id, 'revenue', 'action', e.target.value);
+                                  e.target.style.height = 'auto';
+                                  e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <p 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                                className={`text-[11px] font-bold flex-1 break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                              >
+                                {item.action}
+                              </p>
+                            )}
+
+                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                              <input 
+                                type="date"
+                                autoFocus
+                                className="bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
+                                value={item.dueDate}
+                                onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                                className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
+                              >
+                                {item.dueDate}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                            <textarea 
                               autoFocus
-                              className="flex-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none"
-                              value={item.action}
-                              onChange={(e) => updateActionItem(item.id, 'revenue', 'action', e.target.value)}
+                              rows={1}
+                              placeholder="Add remark..."
+                              className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none"
+                              value={item.remark}
+                              onChange={(e) => {
+                                updateActionItem(item.id, 'revenue', 'remark', e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                              }}
                               onBlur={() => setEditingAction(null)}
                               onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
                             />
                           ) : (
                             <p 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                              className={`text-[11px] font-bold flex-1 break-words ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                              className={`text-[10px] mt-0.5 italic leading-tight ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
-                              {item.action}
+                              {item.remark || (item.isCompleted ? '' : '+ Add remark')}
                             </p>
                           )}
-
-                          {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                            <input 
-                              type="date"
-                              autoFocus
-                              className="bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
-                              value={item.dueDate}
-                              onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
-                              onBlur={() => setEditingAction(null)}
-                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                            />
-                          ) : (
-                            <span 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                              className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
-                            >
-                              {item.dueDate}
-                            </span>
-                          )}
                         </div>
-                        
-                        {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
-                          <input 
-                            autoFocus
-                            placeholder="Add remark..."
-                            className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none"
-                            value={item.remark}
-                            onChange={(e) => updateActionItem(item.id, 'revenue', 'remark', e.target.value)}
-                            onBlur={() => setEditingAction(null)}
-                            onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                          />
-                        ) : (
-                          <p 
-                            onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                            className={`text-[10px] mt-0.5 italic ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
-                          >
-                            {item.remark || (item.isCompleted ? '' : '+ Add remark')}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
 
-              {/* Supply Actions */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-gray-200 pb-1">
-                  <Truck size={14} className="text-blue-500" />
-                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Supply Actions</h3>
+              {/* Supply Column */}
+              <div className="flex flex-col overflow-hidden">
+                <div className="px-4 py-2 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2 shrink-0">
+                  <Truck size={12} className="text-blue-500" />
+                  <h3 className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Supply Actions</h3>
+                  <span className="ml-auto text-[9px] font-bold text-blue-400 bg-white px-1.5 py-0.5 rounded-full border border-blue-100">
+                    {formData.supplyActions?.filter(a => !a.isCompleted).length} Active
+                  </span>
                 </div>
-                
-                {/* Expanded Add Task */}
-                <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-2">
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
-                    <textarea 
-                      ref={supActionInputRef as any}
-                      rows={1}
-                      placeholder="What needs to be done?"
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-400 resize-none"
-                      value={newAction.type === 'supply' ? newAction.text : ''}
-                      onChange={(e) => {
-                        setNewAction({...newAction, text: e.target.value, type: 'supply'});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
-                      <input 
-                        type="date"
-                        className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none focus:border-blue-400"
-                        value={newAction.type === 'supply' ? newAction.date : ''}
-                        onChange={(e) => setNewAction({...newAction, date: e.target.value, type: 'supply'})}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <button 
-                        onClick={() => addActionItem('supply')}
-                        className="w-full bg-blue-500 text-white py-1 rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold"
-                      >
-                        <Plus size={14} /> ADD TASK
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
-                    <textarea 
-                      rows={1}
-                      placeholder="Additional notes..."
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[10px] outline-none focus:border-blue-400 italic resize-none"
-                      value={newAction.type === 'supply' ? newAction.remark : ''}
-                      onChange={(e) => {
-                        setNewAction({...newAction, remark: e.target.value, type: 'supply'});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                    />
-                  </div>
-                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+                  {[...(formData.supplyActions || [])]
+                    .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
+                    .map(item => (
+                      <div key={item.id} className={`flex items-start gap-2 p-2 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}>
+                        <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5 shrink-0">
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                              <textarea 
+                                autoFocus
+                                rows={1}
+                                className="flex-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                value={item.action}
+                                onChange={(e) => {
+                                  updateActionItem(item.id, 'supply', 'action', e.target.value);
+                                  e.target.style.height = 'auto';
+                                  e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <p 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                                className={`text-[11px] font-bold flex-1 break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                              >
+                                {item.action}
+                              </p>
+                            )}
 
-                {/* List */}
-                <div className="space-y-1.5">
-                  {formData.supplyActions?.map(item => (
-                    <div key={item.id} className={`flex items-start gap-2 p-2 rounded border ${item.isCompleted ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
-                      <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5">
-                        {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
-                            <input 
+                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                              <input 
+                                type="date"
+                                autoFocus
+                                className="bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
+                                value={item.dueDate}
+                                onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                                className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
+                              >
+                                {item.dueDate}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                            <textarea 
                               autoFocus
-                              className="flex-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none"
-                              value={item.action}
-                              onChange={(e) => updateActionItem(item.id, 'supply', 'action', e.target.value)}
+                              rows={1}
+                              placeholder="Add remark..."
+                              className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none"
+                              value={item.remark}
+                              onChange={(e) => {
+                                updateActionItem(item.id, 'supply', 'remark', e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                              }}
                               onBlur={() => setEditingAction(null)}
                               onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
                             />
                           ) : (
                             <p 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                              className={`text-[11px] font-bold flex-1 break-words ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                              className={`text-[10px] mt-0.5 italic leading-tight ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
-                              {item.action}
+                              {item.remark || (item.isCompleted ? '' : '+ Add remark')}
                             </p>
                           )}
-
-                          {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                            <input 
-                              type="date"
-                              autoFocus
-                              className="bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
-                              value={item.dueDate}
-                              onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
-                              onBlur={() => setEditingAction(null)}
-                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                            />
-                          ) : (
-                            <span 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                              className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
-                            >
-                              {item.dueDate}
-                            </span>
-                          )}
                         </div>
-                        
-                        {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
-                          <input 
-                            autoFocus
-                            placeholder="Add remark..."
-                            className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none"
-                            value={item.remark}
-                            onChange={(e) => updateActionItem(item.id, 'supply', 'remark', e.target.value)}
-                            onBlur={() => setEditingAction(null)}
-                            onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                          />
-                        ) : (
-                          <p 
-                            onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                            className={`text-[10px] mt-0.5 italic ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
-                          >
-                            {item.remark || (item.isCompleted ? '' : '+ Add remark')}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
