@@ -17,6 +17,15 @@ export default function App() {
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  const getNextEnquiryId = () => {
+    const ids = enquiries.map(e => {
+      const match = e.id.match(/ENQ-(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    const maxId = Math.max(0, ...ids);
+    return `ENQ-${(maxId + 1).toString().padStart(3, '0')}`;
+  };
+
   const handleCreateNew = () => {
     setSelectedEnquiry(null);
     setIsDetailOpen(true);
@@ -90,6 +99,7 @@ export default function App() {
               >
                 <EnquiryDetail 
                   enquiry={selectedEnquiry}
+                  nextEnquiryId={getNextEnquiryId()}
                   onClose={() => setIsDetailOpen(false)}
                   onSave={handleSave}
                   onConvert={handleConvert}

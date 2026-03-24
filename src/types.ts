@@ -38,11 +38,11 @@ export interface Enquiry {
   type: EnquiryType;
   revenueRoles: string[]; // User IDs
   supplyRoles: string[]; // User IDs
-  orderValue: number;
-  conversionProbability: number;
-  expectedValue: number;
+  orderValue?: number;
+  conversionProbability?: number;
+  expectedValue?: number;
   leadDate: string;
-  leadChannel: LeadChannel;
+  leadChannel?: LeadChannel | '';
   leadSource: string;
   status: EnquiryStatus;
   dropReason?: string;

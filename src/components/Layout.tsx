@@ -31,7 +31,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Layout({ children, activeSection, onSectionChange }: LayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
     <div className="flex h-screen bg-[#F8F9FA] text-[#1A1A1A] font-sans overflow-hidden">

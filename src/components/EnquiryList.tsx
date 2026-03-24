@@ -378,10 +378,11 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
         </div>
         <button 
           onClick={onCreateNew}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-colors"
+          className={`bg-emerald-600 hover:bg-emerald-700 text-white ${isCompact ? 'p-1.5' : 'px-3 py-1.5'} rounded-md text-xs font-bold flex items-center gap-2 transition-colors`}
+          title={isCompact ? "CREATE NEW ENQUIRY" : ""}
         >
           <Plus size={16} />
-          CREATE NEW ENQUIRY
+          {!isCompact && "CREATE NEW ENQUIRY"}
         </button>
       </div>
 

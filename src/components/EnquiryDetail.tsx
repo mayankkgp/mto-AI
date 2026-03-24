@@ -6,12 +6,14 @@ import {
   CheckCircle2, 
   Circle, 
   Plus, 
+  CornerDownLeft,
   Paperclip, 
   Download, 
   Eye, 
   ArrowRight,
   AlertCircle,
   ChevronDown,
+  ChevronUp,
   FileText,
   Truck
 } from 'lucide-react';
@@ -22,16 +24,17 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface EnquiryDetailProps {
   enquiry: Enquiry | null;
+  nextEnquiryId: string;
   onClose: () => void;
   onSave: (enquiry: Enquiry) => void;
   onConvert: (enquiry: Enquiry) => void;
   onDrop: (enquiry: Enquiry, reason: string) => void;
 }
 
-export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onDrop }: EnquiryDetailProps) {
+export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave, onConvert, onDrop }: EnquiryDetailProps) {
   const [formData, setFormData] = useState<Partial<Enquiry>>(
     enquiry || {
-      id: `ENQ-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      id: nextEnquiryId,
       customerName: '',
       city: '',
       poc: '',
@@ -60,7 +63,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
       setFormData(enquiry);
     } else {
       setFormData({
-        id: `ENQ-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        id: nextEnquiryId,
         customerName: '',
         city: '',
         poc: '',
@@ -83,15 +86,42 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
         files: []
       });
     }
-  }, [enquiry]);
+  }, [enquiry, nextEnquiryId]);
 
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
+  const [isCustomerExpanded, setIsCustomerExpanded] = useState(!enquiry);
   const revActionInputRef = useRef<HTMLInputElement>(null);
   const supActionInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const overviewRef = useRef<HTMLTextAreaElement>(null);
+  const detailsRef = useRef<HTMLTextAreaElement>(null);
+
+  const updateTextareaHeight = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
+    if (ref.current && ref.current.clientWidth > 0) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = Math.min(ref.current.scrollHeight, 80) + 'px';
+    }
+  };
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      updateTextareaHeight(overviewRef);
+      updateTextareaHeight(detailsRef);
+    });
+
+    if (overviewRef.current) observer.observe(overviewRef.current);
+    if (detailsRef.current) observer.observe(detailsRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    updateTextareaHeight(overviewRef);
+    updateTextareaHeight(detailsRef);
+  }, [formData.leadOverview, formData.leadDetails, enquiry]);
 
   // Clipboard Paste Support
   useEffect(() => {
@@ -130,7 +160,9 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
   };
 
   const parseInputCurrency = (val: string) => {
-    return Number(val.replace(/,/g, '')) || 0;
+    const num = val.replace(/,/g, '');
+    if (num === '') return undefined;
+    return Number(num) || 0;
   };
 
   // Auto-calculation for Expected Value
@@ -138,30 +170,6 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
     const value = (formData.orderValue || 0) * ((formData.conversionProbability || 0) / 100);
     setFormData(prev => ({ ...prev, expectedValue: value }));
   }, [formData.orderValue, formData.conversionProbability]);
-
-  // Auto-fill logic for Customer
-  useEffect(() => {
-    setFormData(enquiry || {
-      customerName: '',
-      city: '',
-      poc: '',
-      contact: '',
-      leadOverview: '',
-      leadDetails: '',
-      type: 'MTO',
-      leadChannel: 'Direct',
-      orderValue: 0,
-      conversionProbability: 50,
-      expectedValue: 0,
-      leadDate: new Date().toISOString().split('T')[0],
-      leadSource: '',
-      revenueRoles: [],
-      supplyRoles: [],
-      revenueActions: [],
-      supplyActions: [],
-      status: 'Active'
-    });
-  }, [enquiry]);
 
   const handleCustomerSelect = (name: string) => {
     const customer = MOCK_CUSTOMERS.find(c => c.name === name);
@@ -278,7 +286,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-gray-800 uppercase tracking-tight">
-              {enquiry ? `Edit Enquiry: ${enquiry.id}` : 'Create New Enquiry'}
+              {enquiry ? enquiry.id : `Create New Enquiry: ${formData.id}`}
             </h2>
             {formData.status && (
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -329,95 +337,149 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
           style={{ gridTemplateColumns: !enquiry ? '70% 30%' : '35% 65%' }}
         >
           {/* Left: Overview (Scrollable) */}
-          <div className="overflow-y-auto p-4 border-r border-gray-100 no-scrollbar">
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-gray-100 pb-1">
-                <FileText size={14} className="text-emerald-600" />
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Overview</h3>
-              </div>
-              
-              <div className="space-y-6">
+          <div className="overflow-y-auto p-2 border-r border-gray-100 no-scrollbar">
+            <div className="space-y-2">
+              <div className="space-y-2">
                 {/* Row 1: Customer Info */}
-                <div className={`grid ${!enquiry ? 'grid-cols-4' : 'grid-cols-1'} gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100 transition-all duration-500`}>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Customer Name *</label>
-                    <div className="relative">
-                      <input 
-                        list="customers"
-                        className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        value={formData.customerName}
-                        onChange={(e) => handleCustomerSelect(e.target.value)}
-                      />
-                      <datalist id="customers">
-                        {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
-                      </datalist>
+                <div className="bg-gray-50/50 rounded-lg border border-gray-100 transition-all duration-500 overflow-hidden">
+                  <div className={`p-2 ${!enquiry ? 'grid grid-cols-4 gap-1.5' : ''}`}>
+                    <div className={!enquiry ? 'space-y-0' : ''}>
+                      {enquiry ? (
+                        <>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">Customer *</label>
+                            <button 
+                              onClick={() => setIsCustomerExpanded(!isCustomerExpanded)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              title={isCustomerExpanded ? "Collapse Details" : "Expand Details"}
+                            >
+                              {isCustomerExpanded ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <input 
+                              list="customers"
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                              value={formData.customerName}
+                              onChange={(e) => handleCustomerSelect(e.target.value)}
+                            />
+                            <datalist id="customers">
+                              {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
+                            </datalist>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label className="text-[9px] font-bold text-gray-400 uppercase">Customer *</label>
+                          <input 
+                            list="customers"
+                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                            value={formData.customerName}
+                            onChange={(e) => handleCustomerSelect(e.target.value)}
+                          />
+                          <datalist id="customers">
+                            {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
+                          </datalist>
+                        </>
+                      )}
                     </div>
+
+                    {!enquiry && (
+                      <>
+                        <div className="space-y-0">
+                          <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
+                          <input 
+                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                            value={formData.city}
+                            onChange={(e) => setFormData({...formData, city: e.target.value})}
+                          />
+                        </div>
+                        <div className="space-y-0">
+                          <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
+                          <input 
+                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                            value={formData.poc}
+                            onChange={(e) => setFormData({...formData, poc: e.target.value})}
+                          />
+                        </div>
+                        <div className="space-y-0">
+                          <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
+                          <input 
+                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                            value={formData.contact}
+                            onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
-                    <input 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.city}
-                      onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
-                    <input 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.poc}
-                      onChange={(e) => setFormData({...formData, poc: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
-                    <input 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.contact}
-                      onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                    />
-                  </div>
+
+                  {enquiry && (
+                    <AnimatePresence initial={false}>
+                      {isCustomerExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        >
+                          <div className="grid grid-cols-1 gap-1.5 p-2 pt-0 border-t border-gray-100/50 bg-gray-50/30">
+                            <div className="space-y-0">
+                              <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
+                              <input 
+                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                                value={formData.city}
+                                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                              />
+                            </div>
+                            <div className="space-y-0">
+                              <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
+                              <input 
+                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                                value={formData.poc}
+                                onChange={(e) => setFormData({...formData, poc: e.target.value})}
+                              />
+                            </div>
+                            <div className="space-y-0">
+                              <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
+                              <input 
+                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                                value={formData.contact}
+                                onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                              />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  )}
                 </div>
 
                 {/* Row 2: Lead Info */}
-                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100 transition-all duration-500`}>
-                  <div className="space-y-1">
+                <div className={`grid grid-cols-3 gap-1.5 bg-gray-50/50 p-2 rounded-lg border border-gray-100 transition-all duration-500`}>
+                  <div className="space-y-0 col-span-3">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Overview *</label>
                     <textarea 
-                      rows={2}
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                      ref={overviewRef}
+                      rows={1}
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
                       value={formData.leadOverview}
-                      onChange={(e) => {
-                        setFormData({...formData, leadOverview: e.target.value});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
+                      onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                       placeholder="Brief overview of the lead..."
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0 col-span-3">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Details</label>
                     <textarea 
-                      rows={2}
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                      ref={detailsRef}
+                      rows={1}
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
                       value={formData.leadDetails}
-                      onChange={(e) => {
-                        setFormData({...formData, leadDetails: e.target.value});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
+                      onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                       placeholder="Detailed requirements, specifications, etc..."
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Type *</label>
                     <div className="flex bg-white border border-gray-200 rounded p-0.5">
                       {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
@@ -436,13 +498,23 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Date</label>
+                    <input 
+                      type="date"
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[10px] outline-none"
+                      value={formData.leadDate}
+                      onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Channel</label>
                     <select 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.leadChannel}
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                      value={formData.leadChannel || ''}
                       onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                     >
+                      <option value="">Select...</option>
                       {['Direct', 'Website', 'WhatsApp', 'LinkedIn', 'Event', 'Others'].map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -451,56 +523,40 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                 </div>
 
                 {/* Row 3: Commercials */}
-                <div className={`grid ${!enquiry ? 'grid-cols-5' : 'grid-cols-2'} gap-4 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100/50 transition-all duration-500`}>
-                  <div className="space-y-1">
+                <div className={`grid grid-cols-3 gap-1.5 bg-emerald-50/30 p-2 rounded-lg border border-emerald-100/50 transition-all duration-500`}>
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-emerald-700 uppercase">Order Value (₹)</label>
                     <input 
                       type="text"
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
-                      value={formatInputCurrency(formData.orderValue || 0)}
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
+                      value={formatInputCurrency(formData.orderValue)}
                       onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-emerald-700 uppercase">Prob (%)</label>
                     <select 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.conversionProbability}
-                      onChange={(e) => setFormData({...formData, conversionProbability: Number(e.target.value)})}
+                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                      value={formData.conversionProbability || ''}
+                      onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                     >
+                      <option value="">Select...</option>
                       {[10, 30, 50, 70, 90].map(p => <option key={p} value={p}>{p}%</option>)}
                     </select>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-emerald-700 uppercase">Expected Value</label>
-                    <div className="w-full px-2 py-1.5 bg-emerald-100/50 border border-emerald-200 text-emerald-800 rounded text-[11px] font-bold">
+                    <div className="w-full px-2 py-1 bg-emerald-100/50 border border-emerald-200 text-emerald-800 rounded text-[11px] font-bold">
                       {formatIndianCurrency(formData.expectedValue || 0)}
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Lead Date</label>
-                    <input 
-                      type="date"
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[10px] outline-none"
-                      value={formData.leadDate}
-                      onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Lead Source</label>
-                    <input 
-                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.leadSource}
-                      onChange={(e) => setFormData({...formData, leadSource: e.target.value})}
-                    />
                   </div>
                 </div>
               </div>
 
               {/* Roles & Files */}
-              <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-3">
-                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-4 transition-all duration-500`}>
-                  <div className="space-y-1">
+              <div className="grid grid-cols-1 gap-1.5 pt-1">
+                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 transition-all duration-500`}>
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
                     <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
                       {formData.revenueRoles?.map(uid => (
@@ -522,7 +578,7 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
                       </select>
                     </div>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0">
                     <label className="text-[9px] font-bold text-gray-400 uppercase">Supply Role</label>
                     <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
                       {formData.supplyRoles?.map(uid => (
@@ -622,111 +678,189 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
           {/* Right: Action Items (Pinned/Sticky) */}
           <div className="flex flex-col bg-gray-50/50 overflow-hidden border-l border-gray-100">
             {/* Unified Task Creation */}
-            <div className="p-4 border-b border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Plus size={14} className="text-emerald-600" />
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Add New Action Item</h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-[1fr_auto] gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
-                    <textarea 
-                      rows={1}
-                      placeholder="What needs to be done?"
-                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
-                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
-                      }`}
-                      value={newAction.text}
-                      onChange={(e) => {
-                        setNewAction({...newAction, text: e.target.value});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                    />
+            <div className="p-3 border-b border-gray-200 bg-white shadow-sm">
+              <div className="space-y-2">
+                {/* Action Item Textarea - Always full width */}
+                <div className="space-y-1">
+                  <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
+                  <textarea 
+                    rows={1}
+                    placeholder="What needs to be done?"
+                    className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
+                      newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                    }`}
+                    value={newAction.text}
+                    onChange={(e) => {
+                      setNewAction({...newAction, text: e.target.value});
+                      e.target.style.height = 'auto';
+                      e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                  />
+                </div>
+
+                {/* Secondary Controls - Responsive Layout */}
+                {!enquiry ? (
+                  <div className="space-y-2">
+                    {/* Row 2: Remark field */}
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
+                      <textarea 
+                        rows={1}
+                        placeholder="Additional notes..."
+                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] ${
+                          newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                        }`}
+                        value={newAction.remark}
+                        onChange={(e) => {
+                          setNewAction({...newAction, remark: e.target.value});
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                      />
+                    </div>
+                    {/* Row 3: Type, Due Date, Submit CTA */}
+                    <div className="grid grid-cols-[auto_1fr_auto] gap-2 items-end">
+                      {/* Type Pill Toggle */}
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-gray-400 uppercase">Type *</label>
+                        <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200 h-[28px]">
+                          <button 
+                            onClick={() => setNewAction({...newAction, type: 'revenue'})}
+                            className={`px-2 text-[9px] font-bold rounded transition-all ${
+                              newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                            }`}
+                          >
+                            REV
+                          </button>
+                          <button 
+                            onClick={() => setNewAction({...newAction, type: 'supply'})}
+                            className={`px-2 text-[9px] font-bold rounded transition-all ${
+                              newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                            }`}
+                          >
+                            SUP
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Due Date */}
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
+                        <input 
+                          type="date"
+                          className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                            newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                          }`}
+                          value={newAction.date}
+                          onChange={(e) => setNewAction({...newAction, date: e.target.value})}
+                        />
+                      </div>
+
+                      {/* Compact Icon-only Submit Button */}
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-transparent uppercase select-none">Action</label>
+                        <button 
+                          onClick={() => addActionItem(newAction.type)}
+                          title="Create Task"
+                          className={`w-full h-[28px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
+                            newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                          }`}
+                        >
+                          <CornerDownLeft size={14} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Type *</label>
-                    <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200 h-[30px]">
+                ) : (
+                  <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-2 items-start`}>
+                    {/* Type Pill Toggle */}
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Type *</label>
+                      <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200 h-[28px]">
+                        <button 
+                          onClick={() => setNewAction({...newAction, type: 'revenue'})}
+                          className={`px-2 text-[9px] font-bold rounded transition-all ${
+                            newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                          }`}
+                        >
+                          REV
+                        </button>
+                        <button 
+                          onClick={() => setNewAction({...newAction, type: 'supply'})}
+                          className={`px-2 text-[9px] font-bold rounded transition-all ${
+                            newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                          }`}
+                        >
+                          SUP
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Due Date */}
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
+                      <input 
+                        type="date"
+                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                          newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                        }`}
+                        value={newAction.date}
+                        onChange={(e) => setNewAction({...newAction, date: e.target.value})}
+                      />
+                    </div>
+
+                    {/* Remark - Maximized in Wide View */}
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
+                      <textarea 
+                        rows={1}
+                        placeholder="Additional notes..."
+                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] ${
+                          newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
+                        }`}
+                        value={newAction.remark}
+                        onChange={(e) => {
+                          setNewAction({...newAction, remark: e.target.value});
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                      />
+                    </div>
+
+                    {/* Compact Icon-only Submit Button */}
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-transparent uppercase select-none">Action</label>
                       <button 
-                        onClick={() => setNewAction({...newAction, type: 'revenue'})}
-                        className={`px-3 text-[9px] font-bold rounded transition-all ${
-                          newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                        onClick={() => addActionItem(newAction.type)}
+                        title="Create Task"
+                        className={`w-full h-[28px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
+                          newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
                         }`}
                       >
-                        REVENUE
-                      </button>
-                      <button 
-                        onClick={() => setNewAction({...newAction, type: 'supply'})}
-                        className={`px-3 text-[9px] font-bold rounded transition-all ${
-                          newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        SUPPLY
+                        <CornerDownLeft size={14} />
                       </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
-                    <input 
-                      type="date"
-                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors ${
-                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
-                      }`}
-                      value={newAction.date}
-                      onChange={(e) => setNewAction({...newAction, date: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Remark (Optional)</label>
-                    <textarea 
-                      rows={1}
-                      placeholder="Additional notes..."
-                      className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors ${
-                        newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
-                      }`}
-                      value={newAction.remark}
-                      onChange={(e) => {
-                        setNewAction({...newAction, remark: e.target.value});
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <button 
-                      onClick={() => addActionItem(newAction.type)}
-                      className={`w-full py-1.5 rounded text-white transition-colors flex items-center justify-center gap-1.5 text-[10px] font-bold shadow-sm ${
-                        newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                      }`}
-                    >
-                      <Plus size={14} /> CREATE TASK
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
             {/* Side-by-Side Lists */}
-            <div className="flex-1 grid grid-cols-2 overflow-hidden">
+            <div className={`flex-1 grid ${!enquiry ? 'grid-cols-1' : 'grid-cols-2'} overflow-hidden transition-all duration-500`}>
               {/* Revenue Column */}
-              <div className="flex flex-col border-r border-gray-200 overflow-hidden">
-                <div className="px-4 py-2 bg-red-50/50 border-b border-red-100 flex items-center gap-2 shrink-0">
+              <div className={`flex flex-col ${enquiry ? 'border-r' : 'border-b'} border-gray-200 overflow-hidden`}>
+                <div className="px-3 py-1.5 bg-red-50/50 border-b border-red-100 flex items-center gap-2 shrink-0">
                   <CheckCircle2 size={12} className="text-red-500" />
                   <h3 className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Revenue Actions</h3>
                   <span className="ml-auto text-[9px] font-bold text-red-400 bg-white px-1.5 py-0.5 rounded-full border border-red-100">
                     {formData.revenueActions?.filter(a => !a.isCompleted).length} Active
                   </span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+                <div className="flex-1 overflow-y-auto p-2 space-y-1.5 no-scrollbar">
                   {[...(formData.revenueActions || [])]
                     .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
                     .map(item => (
-                      <div key={item.id} className={`flex items-start gap-2 p-2 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}>
+                      <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}>
                         <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5 shrink-0">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
@@ -806,18 +940,18 @@ export default function EnquiryDetail({ enquiry, onClose, onSave, onConvert, onD
 
               {/* Supply Column */}
               <div className="flex flex-col overflow-hidden">
-                <div className="px-4 py-2 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2 shrink-0">
+                <div className="px-3 py-1.5 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2 shrink-0">
                   <Truck size={12} className="text-blue-500" />
                   <h3 className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Supply Actions</h3>
                   <span className="ml-auto text-[9px] font-bold text-blue-400 bg-white px-1.5 py-0.5 rounded-full border border-blue-100">
                     {formData.supplyActions?.filter(a => !a.isCompleted).length} Active
                   </span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+                <div className="flex-1 overflow-y-auto p-2 space-y-1.5 no-scrollbar">
                   {[...(formData.supplyActions || [])]
                     .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
                     .map(item => (
-                      <div key={item.id} className={`flex items-start gap-2 p-2 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}>
+                      <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}>
                         <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5 shrink-0">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
