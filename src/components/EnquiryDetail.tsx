@@ -166,7 +166,36 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   // File Preview States
   const [hoveredFile, setHoveredFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string; x: number; y: number } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string } | null>(null);
+  const [securePdfUrl, setSecurePdfUrl] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (lightboxFile?.isPdf) {
+      try {
+        const base64String = lightboxFile.file.split(',')[1];
+        if (base64String) {
+          const byteCharacters = atob(base64String);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          setSecurePdfUrl(url);
+          
+          return () => {
+            URL.revokeObjectURL(url);
+          };
+        }
+      } catch (error) {
+        console.error('Failed to convert PDF base64 to Blob URL:', error);
+        setSecurePdfUrl(lightboxFile.file);
+      }
+    } else {
+      setSecurePdfUrl(null);
+    }
+  }, [lightboxFile]);
 
   const getFileTypeInfo = (dataUrl: string) => {
     const match = dataUrl.match(/^data:([^;]+);/);
@@ -1304,21 +1333,47 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </button>
                 </div>
                 
-                <div className="bg-black rounded-lg overflow-hidden shadow-2xl w-full flex items-center justify-center" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+                <div className="bg-black rounded-lg overflow-hidden shadow-2xl w-full flex items-center justify-center" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                   {lightboxFile.isImage ? (
                     <img 
                       src={lightboxFile.file} 
                       alt={lightboxFile.fileName} 
                       className="max-w-full max-h-full object-contain"
-                      style={{ maxHeight: 'calc(100vh - 120px)' }}
+                      style={{ maxHeight: 'calc(100vh - 200px)' }}
                       referrerPolicy="no-referrer"
                     />
                   ) : lightboxFile.isPdf ? (
-                    <iframe 
-                      src={lightboxFile.file} 
-                      className="w-full h-full min-h-[80vh] bg-white"
-                      title={lightboxFile.fileName}
-                    />
+                    <div className="w-full h-[calc(100vh-200px)] bg-gray-100 overflow-auto flex justify-center p-4">
+                      <Document
+                        file={lightboxFile.file}
+                        loading={
+                          <div className="flex items-center justify-center h-full text-gray-500">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mr-3"></div>
+                            Loading PDF...
+                          </div>
+                        }
+                        error={
+                          <div className="flex flex-col items-center justify-center h-full text-red-500">
+                            <FileText size={48} className="mb-2" />
+                            <p>Failed to load PDF.</p>
+                            <button 
+                              onClick={() => handleDownload(lightboxFile.file, lightboxFile.fileName)}
+                              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                            >
+                              Download Instead
+                            </button>
+                          </div>
+                        }
+                      >
+                        <Page 
+                          pageNumber={1} 
+                          renderTextLayer={false} 
+                          renderAnnotationLayer={false}
+                          className="shadow-xl"
+                          width={Math.min(window.innerWidth * 0.8, 800)}
+                        />
+                      </Document>
+                    </div>
                   ) : (
                     <div className="w-full h-[400px] flex flex-col items-center justify-center bg-gray-900 text-gray-400 gap-4">
                       {lightboxFile.isWord ? <FileText size={64} className="text-blue-500" /> :
@@ -1343,10 +1398,52 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   )}
                 </div>
                 
-                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                <div className="absolute -bottom-8 left-0 right-0 text-center">
                   <p className="text-white font-medium text-sm drop-shadow-md">{lightboxFile.fileName}</p>
                 </div>
               </motion.div>
+
+              {/* Thumbnail Navigation Strip */}
+              {formData.files && formData.files.length > 1 && (
+                <div 
+                  className="absolute bottom-6 left-0 right-0 flex justify-center px-4 pointer-events-none"
+                >
+                  <div className="flex gap-2 overflow-x-auto py-2 px-3 bg-black/60 backdrop-blur-md rounded-xl max-w-full no-scrollbar pointer-events-auto border border-white/10 shadow-2xl">
+                    {formData.files.map((file, idx) => {
+                      const fileInfo = getFileTypeInfo(file);
+                      const fileName = fileInfo.isImage ? `Image ${idx + 1}` : (fileInfo.isPdf ? `Document ${idx + 1}.pdf` : `File ${idx + 1}`);
+                      const isActive = lightboxFile.file === file;
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLightboxFile({ file, fileName, ...fileInfo });
+                          }}
+                          className={`relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                            isActive 
+                              ? 'border-emerald-500 opacity-100 scale-105 shadow-[0_0_15px_rgba(16,185,129,0.5)]' 
+                              : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'
+                          }`}
+                          title={fileName}
+                        >
+                          {fileInfo.isImage ? (
+                            <img src={file} alt={fileName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                              {fileInfo.isPdf ? <FileText size={20} className="text-red-400" /> :
+                               fileInfo.isWord ? <FileText size={20} className="text-blue-400" /> :
+                               fileInfo.isExcel ? <FileSpreadsheet size={20} className="text-emerald-400" /> :
+                               <File size={20} className="text-gray-400" />}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </AnimatePresence>
