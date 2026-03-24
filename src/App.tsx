@@ -36,14 +36,21 @@ export default function App() {
     setIsDetailOpen(true);
   };
 
-  const handleSave = (enq: Enquiry) => {
-    const exists = enquiries.find(e => e.id === enq.id);
-    if (exists) {
-      setEnquiries(enquiries.map(e => e.id === enq.id ? enq : e));
-    } else {
-      setEnquiries([enq, ...enquiries]);
-    }
-    setSelectedEnquiry(enq);
+  const handleSave = async (enq: Enquiry) => {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setEnquiries(prev => {
+          const exists = prev.find(e => e.id === enq.id);
+          if (exists) {
+            return prev.map(e => e.id === enq.id ? enq : e);
+          } else {
+            return [enq, ...prev];
+          }
+        });
+        setSelectedEnquiry(prev => prev?.id === enq.id ? enq : prev);
+        resolve();
+      }, 300);
+    });
   };
 
   const handleConvert = (enq: Enquiry) => {

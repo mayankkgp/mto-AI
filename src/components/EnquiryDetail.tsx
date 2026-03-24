@@ -15,84 +15,179 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  Truck
+  Truck,
+  FileSpreadsheet,
+  File
 } from 'lucide-react';
 import { Enquiry, ActionItem, Customer, User, EnquiryType, LeadChannel } from '../types';
 import { MOCK_CUSTOMERS, MOCK_USERS } from '../mockData';
 import { formatIndianCurrency } from '../utils/formatters';
 import { motion, AnimatePresence } from 'motion/react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface EnquiryDetailProps {
   enquiry: Enquiry | null;
   nextEnquiryId: string;
   onClose: () => void;
-  onSave: (enquiry: Enquiry) => void;
+  onSave: (enquiry: Enquiry) => Promise<void>;
   onConvert: (enquiry: Enquiry) => void;
   onDrop: (enquiry: Enquiry, reason: string) => void;
 }
 
 export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave, onConvert, onDrop }: EnquiryDetailProps) {
+  const getDefaultFormData = (id: string): Partial<Enquiry> => ({
+    id,
+    customerName: '',
+    city: '',
+    poc: '',
+    contact: '',
+    leadOverview: '',
+    leadDetails: '',
+    type: 'MTO',
+    revenueRoles: ['u1'], // Default to current user (Mayank)
+    supplyRoles: [],
+    orderValue: 0,
+    conversionProbability: 50,
+    expectedValue: 0,
+    leadDate: new Date().toISOString().split('T')[0],
+    leadChannel: 'Direct',
+    leadSource: '',
+    status: 'Active',
+    createdOn: new Date().toISOString().split('T')[0],
+    revenueActions: [],
+    supplyActions: [],
+    files: []
+  });
+
+  const [internalEnquiry, setInternalEnquiry] = useState<Enquiry | null>(enquiry);
+  const [pendingAction, setPendingAction] = useState<{ type: 'close' } | { type: 'switch', enquiry: Enquiry | null } | null>(null);
+  const [showAutoSaveError, setShowAutoSaveError] = useState(false);
+  const isSavingRef = useRef(false);
+
   const [formData, setFormData] = useState<Partial<Enquiry>>(
-    enquiry || {
-      id: nextEnquiryId,
-      customerName: '',
-      city: '',
-      poc: '',
-      contact: '',
-      leadOverview: '',
-      leadDetails: '',
-      type: 'MTO',
-      revenueRoles: ['u1'], // Default to current user (Mayank)
-      supplyRoles: [],
-      orderValue: 0,
-      conversionProbability: 50,
-      expectedValue: 0,
-      leadDate: new Date().toISOString().split('T')[0],
-      leadChannel: 'Direct',
-      leadSource: '',
-      status: 'Active',
-      createdOn: new Date().toISOString().split('T')[0],
-      revenueActions: [],
-      supplyActions: [],
-      files: []
-    }
+    enquiry || getDefaultFormData(nextEnquiryId)
   );
 
-  useEffect(() => {
-    if (enquiry) {
-      setFormData(enquiry);
-    } else {
-      setFormData({
-        id: nextEnquiryId,
-        customerName: '',
-        city: '',
-        poc: '',
-        contact: '',
-        leadOverview: '',
-        leadDetails: '',
-        type: 'MTO',
-        revenueRoles: ['u1'],
-        supplyRoles: [],
-        orderValue: 0,
-        conversionProbability: 50,
-        expectedValue: 0,
-        leadDate: new Date().toISOString().split('T')[0],
-        leadChannel: 'Direct',
-        leadSource: '',
-        status: 'Active',
-        createdOn: new Date().toISOString().split('T')[0],
-        revenueActions: [],
-        supplyActions: [],
-        files: []
-      });
+  const isDirty = React.useMemo(() => {
+    if (!internalEnquiry) {
+      return formData.customerName !== '' || formData.city !== '' || formData.leadOverview !== '';
     }
-  }, [enquiry, nextEnquiryId]);
+    return JSON.stringify(formData) !== JSON.stringify(internalEnquiry);
+  }, [formData, internalEnquiry]);
+
+  useEffect(() => {
+    if (enquiry?.id !== internalEnquiry?.id && !isSavingRef.current && !showAutoSaveError) {
+      if (isDirty) {
+        const action = { type: 'switch' as const, enquiry };
+        setPendingAction(action);
+        
+        const doSave = async () => {
+          isSavingRef.current = true;
+          try {
+            await onSave(formData as Enquiry);
+            setInternalEnquiry(enquiry);
+            setFormData(enquiry || getDefaultFormData(nextEnquiryId));
+            setPendingAction(null);
+          } catch (error) {
+            setShowAutoSaveError(true);
+          } finally {
+            isSavingRef.current = false;
+          }
+        };
+        doSave();
+      } else {
+        setInternalEnquiry(enquiry);
+        setFormData(enquiry || getDefaultFormData(nextEnquiryId));
+      }
+    }
+  }, [enquiry, internalEnquiry, isDirty, showAutoSaveError, nextEnquiryId, onSave, formData]);
+
+  const handleCloseRequest = async () => {
+    if (isDirty) {
+      setPendingAction({ type: 'close' });
+      isSavingRef.current = true;
+      try {
+        await onSave(formData as Enquiry);
+        onClose();
+      } catch (error) {
+        setShowAutoSaveError(true);
+      } finally {
+        isSavingRef.current = false;
+      }
+    } else {
+      onClose();
+    }
+  };
+
+  const handleRetrySave = async () => {
+    setShowAutoSaveError(false);
+    isSavingRef.current = true;
+    try {
+      await onSave(formData as Enquiry);
+      if (pendingAction?.type === 'close') {
+        onClose();
+      } else if (pendingAction?.type === 'switch') {
+        setInternalEnquiry(pendingAction.enquiry);
+        setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
+      }
+      setPendingAction(null);
+    } catch (error) {
+      setShowAutoSaveError(true);
+    } finally {
+      isSavingRef.current = false;
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setShowAutoSaveError(false);
+    if (pendingAction?.type === 'close') {
+      onClose();
+    } else if (pendingAction?.type === 'switch') {
+      setInternalEnquiry(pendingAction.enquiry);
+      setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
+    }
+    setPendingAction(null);
+  };
 
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(!enquiry);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // File Preview States
+  const [hoveredFile, setHoveredFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string; x: number; y: number } | null>(null);
+  const [lightboxFile, setLightboxFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string } | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getFileTypeInfo = (dataUrl: string) => {
+    const match = dataUrl.match(/^data:([^;]+);/);
+    const mimeType = match ? match[1] : '';
+    
+    const isImage = mimeType.startsWith('image/');
+    const isPdf = mimeType === 'application/pdf';
+    const isWord = mimeType.includes('wordprocessingml') || mimeType.includes('msword');
+    const isExcel = mimeType.includes('spreadsheetml') || mimeType.includes('ms-excel');
+    const isDoc = isWord || isExcel || mimeType.includes('presentationml') || mimeType.includes('ms-powerpoint') || mimeType === 'text/plain' || mimeType === 'text/csv';
+
+    // Estimate size from base64 length
+    const base64Length = dataUrl.length - (dataUrl.indexOf(',') + 1);
+    const sizeInBytes = Math.ceil((base64Length * 3) / 4);
+    const sizeInKB = (sizeInBytes / 1024).toFixed(1);
+    const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+    const displaySize = sizeInBytes > 1024 * 1024 ? `${sizeInMB} MB` : `${sizeInKB} KB`;
+
+    return { isImage, isPdf, isDoc, isWord, isExcel, mimeType, displaySize };
+  };
+
   const revActionInputRef = useRef<HTMLInputElement>(null);
   const supActionInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -108,8 +203,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
-      updateTextareaHeight(overviewRef);
-      updateTextareaHeight(detailsRef);
+      window.requestAnimationFrame(() => {
+        updateTextareaHeight(overviewRef);
+        updateTextareaHeight(detailsRef);
+      });
     });
 
     if (overviewRef.current) observer.observe(overviewRef.current);
@@ -150,6 +247,50 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
+
+  // Lightbox Escape Key Handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+        } else {
+          setLightboxFile(null);
+        }
+      }
+    };
+    
+    if (lightboxFile) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [lightboxFile, showDeleteConfirm]);
+
+  // File Hover Handlers
+  const handleFileMouseEnter = (e: React.MouseEvent, file: string, fileName: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top - 10; // Position above the thumbnail
+
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      const fileInfo = getFileTypeInfo(file);
+      setHoveredFile({ file, fileName, ...fileInfo, x, y });
+    }, 300);
+  };
+
+  const handleFileMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setHoveredFile(null);
+  };
 
   // Helper for Indian Currency Formatting in Input
   const formatInputCurrency = (val: number | string) => {
@@ -248,10 +389,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     }
   };
 
-  const removeFile = (fileName: string) => {
+  const removeFile = (fileUrl: string) => {
     setFormData(prev => ({
       ...prev,
-      files: prev.files?.filter(f => f !== fileName)
+      files: prev.files?.filter(f => f !== fileUrl)
     }));
   };
 
@@ -323,7 +464,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <Save size={14} /> SAVE
             </button>
             <button 
-              onClick={onClose}
+              onClick={handleCloseRequest}
               className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
             >
               <X size={20} />
@@ -337,341 +478,314 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           style={{ gridTemplateColumns: !enquiry ? '70% 30%' : '35% 65%' }}
         >
           {/* Left: Overview (Scrollable) */}
-          <div className="overflow-y-auto p-2 border-r border-gray-100 no-scrollbar">
-            <div className="space-y-2">
-              <div className="space-y-2">
-                {/* Row 1: Customer Info */}
-                <div className="bg-gray-50/50 rounded-lg border border-gray-100 transition-all duration-500 overflow-hidden">
-                  <div className={`p-2 ${!enquiry ? 'grid grid-cols-4 gap-1.5' : ''}`}>
-                    <div className={!enquiry ? 'space-y-0' : ''}>
+          <div className="overflow-y-auto p-3 border-r border-gray-100 no-scrollbar bg-white">
+            <div className="flex flex-col gap-2">
+              
+              {/* Customer Name + Toggle */}
+              <div className="space-y-0">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Customer *</label>
+                  {enquiry && (
+                    <button 
+                      onClick={() => setIsCustomerExpanded(!isCustomerExpanded)}
+                      className="p-0.5 hover:bg-gray-100 rounded transition-colors"
+                      title={isCustomerExpanded ? "Collapse Details" : "Expand Details"}
+                    >
+                      {isCustomerExpanded ? <ChevronUp size={10} className="text-gray-500" /> : <ChevronDown size={10} className="text-gray-500" />}
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <input 
+                    list="customers"
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    value={formData.customerName}
+                    onChange={(e) => handleCustomerSelect(e.target.value)}
+                  />
+                  <datalist id="customers">
+                    {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
+                  </datalist>
+                </div>
+              </div>
+
+              {/* Collapsible Customer Details */}
+              <AnimatePresence initial={false}>
+                {(!enquiry || isCustomerExpanded) && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className={`grid gap-1.5 pb-2 ${!enquiry ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       {enquiry ? (
                         <>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase">Customer *</label>
-                            <button 
-                              onClick={() => setIsCustomerExpanded(!isCustomerExpanded)}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors"
-                              title={isCustomerExpanded ? "Collapse Details" : "Expand Details"}
-                            >
-                              {isCustomerExpanded ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
-                            </button>
-                          </div>
-                          <div className="relative">
+                          <div className="space-y-0 col-span-2">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
                             <input 
-                              list="customers"
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                              value={formData.customerName}
-                              onChange={(e) => handleCustomerSelect(e.target.value)}
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.poc}
+                              onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
-                            <datalist id="customers">
-                              {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
-                            </datalist>
+                          </div>
+                          <div className="space-y-0">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
+                            <input 
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.city}
+                              onChange={(e) => setFormData({...formData, city: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-0">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
+                            <input 
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.contact}
+                              onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                            />
                           </div>
                         </>
                       ) : (
                         <>
-                          <label className="text-[9px] font-bold text-gray-400 uppercase">Customer *</label>
-                          <input 
-                            list="customers"
-                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                            value={formData.customerName}
-                            onChange={(e) => handleCustomerSelect(e.target.value)}
-                          />
-                          <datalist id="customers">
-                            {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
-                          </datalist>
+                          <div className="space-y-0">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
+                            <input 
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.city}
+                              onChange={(e) => setFormData({...formData, city: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-0">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
+                            <input 
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.poc}
+                              onChange={(e) => setFormData({...formData, poc: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-0">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
+                            <input 
+                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              value={formData.contact}
+                              onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                            />
+                          </div>
                         </>
                       )}
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                    {!enquiry && (
-                      <>
-                        <div className="space-y-0">
-                          <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
-                          <input 
-                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                            value={formData.city}
-                            onChange={(e) => setFormData({...formData, city: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-0">
-                          <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
-                          <input 
-                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                            value={formData.poc}
-                            onChange={(e) => setFormData({...formData, poc: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-0">
-                          <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
-                          <input 
-                            className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                            value={formData.contact}
-                            onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {enquiry && (
-                    <AnimatePresence initial={false}>
-                      {isCustomerExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        >
-                          <div className="grid grid-cols-1 gap-1.5 p-2 pt-0 border-t border-gray-100/50 bg-gray-50/30">
-                            <div className="space-y-0">
-                              <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
-                              <input 
-                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                                value={formData.city}
-                                onChange={(e) => setFormData({...formData, city: e.target.value})}
-                              />
-                            </div>
-                            <div className="space-y-0">
-                              <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
-                              <input 
-                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                                value={formData.poc}
-                                onChange={(e) => setFormData({...formData, poc: e.target.value})}
-                              />
-                            </div>
-                            <div className="space-y-0">
-                              <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
-                              <input 
-                                className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                                value={formData.contact}
-                                onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                              />
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  )}
-                </div>
-
-                {/* Row 2: Lead Info */}
-                <div className={`grid grid-cols-3 gap-1.5 bg-gray-50/50 p-2 rounded-lg border border-gray-100 transition-all duration-500`}>
-                  <div className="space-y-0 col-span-3">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Overview *</label>
-                    <textarea 
-                      ref={overviewRef}
-                      rows={1}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
-                      value={formData.leadOverview}
-                      onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
-                      placeholder="Brief overview of the lead..."
-                    />
-                  </div>
-                  <div className="space-y-0 col-span-3">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Details</label>
-                    <textarea 
-                      ref={detailsRef}
-                      rows={1}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
-                      value={formData.leadDetails}
-                      onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
-                      placeholder="Detailed requirements, specifications, etc..."
-                    />
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Type *</label>
-                    <div className="flex bg-white border border-gray-200 rounded p-0.5">
-                      {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setFormData({...formData, type: t})}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${
-                            formData.type === t 
-                            ? 'bg-emerald-600 text-white shadow-sm' 
-                            : 'text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Date</label>
-                    <input 
-                      type="date"
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[10px] outline-none"
-                      value={formData.leadDate}
-                      onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Channel</label>
-                    <select 
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.leadChannel || ''}
-                      onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
-                    >
-                      <option value="">Select...</option>
-                      {['Direct', 'Website', 'WhatsApp', 'LinkedIn', 'Event', 'Others'].map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 3: Commercials */}
-                <div className={`grid grid-cols-3 gap-1.5 bg-emerald-50/30 p-2 rounded-lg border border-emerald-100/50 transition-all duration-500`}>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Order Value (₹)</label>
-                    <input 
-                      type="text"
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
-                      value={formatInputCurrency(formData.orderValue)}
-                      onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
-                    />
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Prob (%)</label>
-                    <select 
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
-                      value={formData.conversionProbability || ''}
-                      onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
-                    >
-                      <option value="">Select...</option>
-                      {[10, 30, 50, 70, 90].map(p => <option key={p} value={p}>{p}%</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-emerald-700 uppercase">Expected Value</label>
-                    <div className="w-full px-2 py-1 bg-emerald-100/50 border border-emerald-200 text-emerald-800 rounded text-[11px] font-bold">
-                      {formatIndianCurrency(formData.expectedValue || 0)}
-                    </div>
-                  </div>
-                </div>
+              {/* Lead Overview */}
+              <div className="space-y-0">
+                <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Overview *</label>
+                <textarea 
+                  ref={overviewRef}
+                  rows={1}
+                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
+                  value={formData.leadOverview}
+                  onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
+                  placeholder="Brief overview of the lead..."
+                />
               </div>
 
-              {/* Roles & Files */}
-              <div className="grid grid-cols-1 gap-1.5 pt-1">
-                <div className={`grid ${!enquiry ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 transition-all duration-500`}>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
-                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
-                      {formData.revenueRoles?.map(uid => (
-                        <span key={uid} className="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
-                          {MOCK_USERS.find(u => u.id === uid)?.name}
-                          <button onClick={() => setFormData({...formData, revenueRoles: formData.revenueRoles?.filter(id => id !== uid)})}><X size={10} /></button>
-                        </span>
-                      ))}
-                      <select 
-                        className="bg-transparent text-[9px] outline-none"
-                        onChange={(e) => {
-                          if (e.target.value && !formData.revenueRoles?.includes(e.target.value)) {
-                            setFormData({...formData, revenueRoles: [...(formData.revenueRoles || []), e.target.value]});
-                          }
-                        }}
+              {/* Lead Details */}
+              <div className="space-y-0">
+                <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Details</label>
+                <textarea 
+                  ref={detailsRef}
+                  rows={1}
+                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
+                  value={formData.leadDetails}
+                  onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
+                  placeholder="Detailed requirements, specifications, etc..."
+                />
+              </div>
+
+              {/* Type, Lead Date, Channel */}
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Type *</label>
+                  <div className="flex bg-white border border-gray-200 rounded p-0.5">
+                    {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setFormData({...formData, type: t})}
+                        className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${
+                          formData.type === t 
+                          ? 'bg-emerald-600 text-white shadow-sm' 
+                          : 'text-gray-500 hover:bg-gray-50'
+                        }`}
                       >
-                        <option value="">+ Add</option>
-                        {MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-0">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase">Supply Role</label>
-                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded min-h-[28px]">
-                      {formData.supplyRoles?.map(uid => (
-                        <span key={uid} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
-                          {MOCK_USERS.find(u => u.id === uid)?.name}
-                          <button onClick={() => setFormData({...formData, supplyRoles: formData.supplyRoles?.filter(id => id !== uid)})}><X size={10} /></button>
-                        </span>
-                      ))}
-                      <select 
-                        className="bg-transparent text-[9px] outline-none"
-                        onChange={(e) => {
-                          if (e.target.value && !formData.supplyRoles?.includes(e.target.value)) {
-                            setFormData({...formData, supplyRoles: [...(formData.supplyRoles || []), e.target.value]});
-                          }
-                        }}
-                      >
-                        <option value="">+ Add</option>
-                        {MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                      </select>
-                    </div>
+                        {t}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-400 uppercase">Files & Attachments</label>
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Lead Date</label>
                   <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    multiple 
-                    onChange={handleFileChange} 
+                    type="date"
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[10px] outline-none"
+                    value={formData.leadDate}
+                    onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
                   />
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleDrop}
-                    className="border border-dashed border-gray-200 rounded p-3 flex flex-col items-center justify-center gap-1 hover:border-emerald-300 transition-colors cursor-pointer bg-gray-50"
+                </div>
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Channel</label>
+                  <select 
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    value={formData.leadChannel || ''}
+                    onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                   >
-                    <Paperclip size={16} className="text-gray-400" />
-                    <p className="text-[9px] text-gray-500 font-medium text-center">Drag & Drop, Click to Upload, or Paste from Clipboard</p>
-                    <button className="text-[9px] font-bold text-emerald-600 uppercase">Browse Files</button>
-                  </div>
-                  
-                  {/* File List */}
-                  {formData.files && formData.files.length > 0 && (
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {formData.files.map((file, idx) => {
-                        const isImage = file.startsWith('data:image');
-                        const fileName = isImage ? `Image ${idx + 1}` : file;
-                        
-                        return (
-                          <div key={idx} className="relative group bg-gray-50 rounded border border-gray-100 overflow-hidden aspect-square flex flex-col">
-                            {isImage ? (
-                              <img 
-                                src={file} 
-                                alt={fileName} 
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="flex-1 flex items-center justify-center bg-gray-100">
-                                <FileText size={24} className="text-gray-400" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownload(file, fileName);
-                                }}
-                                className="p-1.5 bg-white/20 hover:bg-white/40 rounded text-white backdrop-blur-sm"
-                              >
-                                <Download size={14} />
-                              </button>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeFile(file);
-                                }}
-                                className="p-1.5 bg-red-500/20 hover:bg-red-500/40 rounded text-white backdrop-blur-sm"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                            <div className="p-1 bg-white/90 backdrop-blur-sm border-t border-gray-100">
-                              <p className="text-[8px] font-bold text-gray-600 truncate">{fileName}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                    <option value="">Select...</option>
+                    {['Direct', 'Website', 'WhatsApp', 'LinkedIn', 'Event', 'Others'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
+
+              {/* Micro-Dropzone: Files & Attachments */}
+              <div className="space-y-1 mt-1">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  multiple 
+                  onChange={handleFileChange} 
+                />
+                
+                {/* Horizontal File Previews (Only visible if files exist) */}
+                {formData.files && formData.files.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {formData.files.map((file, idx) => {
+                      const fileInfo = getFileTypeInfo(file);
+                      const fileName = fileInfo.isImage ? `Image ${idx + 1}` : (fileInfo.isPdf ? `Document ${idx + 1}.pdf` : `File ${idx + 1}`);
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className="relative group bg-gray-50 rounded border border-gray-100 overflow-hidden w-16 h-16 shrink-0 flex flex-col cursor-pointer"
+                          onMouseEnter={(e) => handleFileMouseEnter(e, file, fileName)}
+                          onMouseLeave={handleFileMouseLeave}
+                          onClick={() => setLightboxFile({ file, fileName, ...fileInfo })}
+                        >
+                          {fileInfo.isImage ? (
+                            <img 
+                              src={file} 
+                              alt={fileName} 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="flex-1 flex items-center justify-center bg-gray-100">
+                              <FileText size={16} className="text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 p-0.5 bg-white/90 backdrop-blur-sm border-t border-gray-100">
+                            <p className="text-[6px] font-bold text-gray-600 truncate text-center">{fileName}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Compact CTA */}
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer bg-gray-50/50"
+                >
+                  <Paperclip size={12} className="text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Attach Files</span>
+                </div>
+              </div>
+
+              {/* Commercials */}
+              <div className="grid grid-cols-3 gap-1.5 mt-1">
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Order Value (₹)</label>
+                  <input 
+                    type="text"
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
+                    value={formatInputCurrency(formData.orderValue)}
+                    onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
+                  />
+                </div>
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Prob (%)</label>
+                  <select 
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    value={formData.conversionProbability || ''}
+                    onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
+                  >
+                    <option value="">Select...</option>
+                    {[10, 30, 50, 70, 90].map(p => <option key={p} value={p}>{p}%</option>)}
+                  </select>
+                </div>
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Expected Value</label>
+                  <div className="w-full px-2 py-1 bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold">
+                    {formatIndianCurrency(formData.expectedValue || 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Roles */}
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
+                  <div className="flex flex-wrap gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px]">
+                    {formData.revenueRoles?.map(uid => (
+                      <span key={uid} className="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
+                        {MOCK_USERS.find(u => u.id === uid)?.name}
+                        <button onClick={() => setFormData({...formData, revenueRoles: formData.revenueRoles?.filter(id => id !== uid)})}><X size={10} /></button>
+                      </span>
+                    ))}
+                    <select 
+                      className="bg-transparent text-[9px] outline-none"
+                      onChange={(e) => {
+                        if (e.target.value && !formData.revenueRoles?.includes(e.target.value)) {
+                          setFormData({...formData, revenueRoles: [...(formData.revenueRoles || []), e.target.value]});
+                        }
+                      }}
+                    >
+                      <option value="">+ Add</option>
+                      {MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-0">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase">Supply Role</label>
+                  <div className="flex flex-wrap gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px]">
+                    {formData.supplyRoles?.map(uid => (
+                      <span key={uid} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
+                        {MOCK_USERS.find(u => u.id === uid)?.name}
+                        <button onClick={() => setFormData({...formData, supplyRoles: formData.supplyRoles?.filter(id => id !== uid)})}><X size={10} /></button>
+                      </span>
+                    ))}
+                    <select 
+                      className="bg-transparent text-[9px] outline-none"
+                      onChange={(e) => {
+                        if (e.target.value && !formData.supplyRoles?.includes(e.target.value)) {
+                          setFormData({...formData, supplyRoles: [...(formData.supplyRoles || []), e.target.value]});
+                        }
+                      }}
+                    >
+                      <option value="">+ Add</option>
+                      {MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -865,12 +979,33 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-2">
+                          <div className="relative">
+                            {/* Floated Due Date */}
+                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                              <input 
+                                type="date"
+                                autoFocus
+                                className="float-right bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
+                                value={item.dueDate}
+                                onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                                className={`float-right text-[9px] font-bold shrink-0 ml-2 mb-1 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
+                              >
+                                {item.dueDate}
+                              </span>
+                            )}
+
+                            {/* Action Text */}
                             {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="flex-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                className="w-full bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
                                 onChange={(e) => {
                                   updateActionItem(item.id, 'revenue', 'action', e.target.value);
@@ -883,38 +1018,23 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] font-bold flex-1 break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                                className={`text-[11px] font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
                               >
                                 {item.action}
                               </p>
                             )}
-
-                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                              <input 
-                                type="date"
-                                autoFocus
-                                className="bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
-                                value={item.dueDate}
-                                onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
-                                onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                              />
-                            ) : (
-                              <span 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                                className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
-                              >
-                                {item.dueDate}
-                              </span>
-                            )}
+                            
+                            {/* Clear float before remark */}
+                            <div className="clear-both"></div>
                           </div>
                           
+                          {/* Remark */}
                           {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
                             <textarea 
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none"
+                              className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none block"
                               value={item.remark}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'revenue', 'remark', e.target.value);
@@ -927,7 +1047,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           ) : (
                             <p 
                               onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
                               {item.remark || (item.isCompleted ? '' : '+ Add remark')}
                             </p>
@@ -956,12 +1076,33 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-2">
+                          <div className="relative">
+                            {/* Floated Due Date */}
+                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
+                              <input 
+                                type="date"
+                                autoFocus
+                                className="float-right bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
+                                value={item.dueDate}
+                                onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
+                                onBlur={() => setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
+                                className={`float-right text-[9px] font-bold shrink-0 ml-2 mb-1 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
+                              >
+                                {item.dueDate}
+                              </span>
+                            )}
+
+                            {/* Action Text */}
                             {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="flex-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                className="w-full bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
                                 onChange={(e) => {
                                   updateActionItem(item.id, 'supply', 'action', e.target.value);
@@ -974,38 +1115,23 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] font-bold flex-1 break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                                className={`text-[11px] font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
                               >
                                 {item.action}
                               </p>
                             )}
-
-                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                              <input 
-                                type="date"
-                                autoFocus
-                                className="bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none"
-                                value={item.dueDate}
-                                onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
-                                onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                              />
-                            ) : (
-                              <span 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                                className={`text-[9px] font-bold shrink-0 ml-2 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
-                              >
-                                {item.dueDate}
-                              </span>
-                            )}
+                            
+                            {/* Clear float before remark */}
+                            <div className="clear-both"></div>
                           </div>
                           
+                          {/* Remark */}
                           {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
                             <textarea 
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none"
+                              className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none block"
                               value={item.remark}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'supply', 'remark', e.target.value);
@@ -1018,7 +1144,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           ) : (
                             <p 
                               onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
                               {item.remark || (item.isCompleted ? '' : '+ Add remark')}
                             </p>
@@ -1070,6 +1196,236 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     className="px-4 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                   >
                     CONFIRM DROP
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Hover Popover */}
+        <AnimatePresence>
+          {hoveredFile && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed z-[70] pointer-events-none bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
+              style={{
+                left: hoveredFile.x,
+                top: hoveredFile.y,
+                transform: 'translate(-50%, -100%)',
+                width: '320px',
+                height: 'auto',
+                maxHeight: '400px'
+              }}
+            >
+              {hoveredFile.isImage ? (
+                <img 
+                  src={hoveredFile.file} 
+                  alt={hoveredFile.fileName} 
+                  className="w-full h-auto max-h-[360px] object-contain bg-gray-50"
+                  referrerPolicy="no-referrer"
+                />
+              ) : hoveredFile.isPdf ? (
+                <div className="w-full h-[360px] bg-white flex items-center justify-center overflow-hidden">
+                  <Document
+                    file={hoveredFile.file}
+                    loading={<div className="text-gray-400 text-sm font-medium">Loading PDF...</div>}
+                    error={<div className="text-red-400 text-sm font-medium">Failed to load PDF</div>}
+                  >
+                    <Page pageNumber={1} width={320} renderTextLayer={false} renderAnnotationLayer={false} />
+                  </Document>
+                </div>
+              ) : (
+                <div className="w-full p-6 flex flex-col items-center justify-center bg-gray-50 gap-4">
+                  {hoveredFile.isWord ? <FileText size={64} className="text-blue-500" /> :
+                   hoveredFile.isExcel ? <FileSpreadsheet size={64} className="text-emerald-500" /> :
+                   <File size={64} className="text-gray-400" />}
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-bold text-gray-800">{hoveredFile.fileName}</p>
+                    <p className="text-xs text-gray-500">{hoveredFile.displaySize}</p>
+                  </div>
+                  <div className="mt-2 px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-wide shadow-sm">
+                    Click to open viewer
+                  </div>
+                </div>
+              )}
+              {hoveredFile.isImage && (
+                <div className="p-2 bg-white border-t border-gray-100">
+                  <p className="text-sm font-bold text-gray-700 truncate text-center">{hoveredFile.fileName}</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Click Lightbox */}
+        <AnimatePresence>
+          {lightboxFile && (
+            <div 
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8"
+              onClick={() => setLightboxFile(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative max-w-5xl w-full max-h-full flex flex-col items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="absolute -top-12 right-0 flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      handleDownload(lightboxFile.file, lightboxFile.fileName);
+                    }}
+                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-colors"
+                    title="Download"
+                  >
+                    <Download size={20} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-full text-white backdrop-blur-md transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                  <button 
+                    onClick={() => setLightboxFile(null)}
+                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-colors ml-2"
+                    title="Close"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="bg-black rounded-lg overflow-hidden shadow-2xl w-full flex items-center justify-center" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+                  {lightboxFile.isImage ? (
+                    <img 
+                      src={lightboxFile.file} 
+                      alt={lightboxFile.fileName} 
+                      className="max-w-full max-h-full object-contain"
+                      style={{ maxHeight: 'calc(100vh - 120px)' }}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : lightboxFile.isPdf ? (
+                    <iframe 
+                      src={lightboxFile.file} 
+                      className="w-full h-full min-h-[80vh] bg-white"
+                      title={lightboxFile.fileName}
+                    />
+                  ) : (
+                    <div className="w-full h-[400px] flex flex-col items-center justify-center bg-gray-900 text-gray-400 gap-4">
+                      {lightboxFile.isWord ? <FileText size={64} className="text-blue-500" /> :
+                       lightboxFile.isExcel ? <FileSpreadsheet size={64} className="text-emerald-500" /> :
+                       <File size={64} className="text-gray-600" />}
+                      <p className="text-sm font-medium">Live preview unavailable for this format.</p>
+                      <button 
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = lightboxFile.file;
+                          link.download = lightboxFile.fileName;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-bold transition-colors flex items-center gap-2 mt-2 shadow-lg"
+                      >
+                        <Download size={16} />
+                        Download to View
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                  <p className="text-white font-medium text-sm drop-shadow-md">{lightboxFile.fileName}</p>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteConfirm && lightboxFile && (
+            <div 
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Delete File</h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Are you sure you want to delete <span className="font-semibold text-gray-700">{lightboxFile.fileName}</span>? This action cannot be undone.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        removeFile(lightboxFile.file);
+                        setShowDeleteConfirm(false);
+                        setLightboxFile(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Auto-Save Error Modal */}
+        <AnimatePresence>
+          {showAutoSaveError && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Auto-save failed</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  You have unsaved changes. Would you like to try saving again or discard your changes?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDiscardChanges}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors"
+                  >
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={handleRetrySave}
+                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors"
+                  >
+                    Retry Save
                   </button>
                 </div>
               </motion.div>
