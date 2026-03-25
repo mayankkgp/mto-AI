@@ -444,7 +444,7 @@ export default function EnquiryList({
   return (
     <div className="flex flex-col h-full">
       {/* Header & Tabs */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between shrink-0">
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-2 flex items-center justify-between shrink-0">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
           {(['Active', 'Converted', 'Dropped'] as EnquiryStatus[]).map((status) => (
             <button
@@ -471,7 +471,7 @@ export default function EnquiryList({
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-1.5 flex items-center gap-3 shrink-0 h-11">
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-9 min-[height:801px]:h-11">
         <div className={`relative ${isCompact ? 'w-48' : 'w-64'} shrink-0`}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input 
@@ -643,12 +643,12 @@ export default function EnquiryList({
           <thead className="sticky top-0 bg-gray-50 z-30 border-b border-gray-200">
             <tr className="text-[10px] uppercase tracking-wider text-gray-500 font-bold whitespace-nowrap">
               <SortHeader label="Customer" sortKey="customerName" className="sticky left-0 z-40 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[150px]" />
-              <th className={`px-4 py-1 border-r border-gray-200 min-w-[200px] ${isCompact ? 'w-[200px]' : 'w-[25%]'}`}>Overview</th>
-              <th className="px-4 py-1 border-r border-gray-200 min-w-[100px]">Rev Role</th>
+              <th className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[200px] ${isCompact ? 'w-[200px]' : 'w-[25%]'}`}>Overview</th>
+              <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[100px]">Rev Role</th>
               <SortHeader label="ID" sortKey="id" className="min-w-[100px]" />
-              {statusTab === 'Converted' && <th className="px-4 py-1 border-r border-gray-200 min-w-[120px]">Order ID</th>}
-              <th className="px-4 py-1 border-r border-gray-200 min-w-[80px]">Type</th>
-              <th className="px-4 py-1 border-r border-gray-200 min-w-[120px]">Supply</th>
+              {statusTab === 'Converted' && <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[120px]">Order ID</th>}
+              <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[80px]">Type</th>
+              <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[120px]">Supply</th>
               <SortHeader label="Rev Action" sortKey="revAction" className="min-w-[120px]" />
               <SortHeader label="Sup Action" sortKey="supAction" className="min-w-[120px]" />
               <SortHeader label="Exp Value" sortKey="expectedValue" className="min-w-[110px]" />
@@ -666,15 +666,15 @@ export default function EnquiryList({
                     : 'bg-white hover:bg-gray-50'
                 }`}
               >
-                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors ${
+                <td className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors ${
                   activeEnquiryId === enq.id ? 'bg-inherit border-l-[3px] border-emerald-600' : 'bg-inherit border-l-[3px] border-transparent'
                 }`}>
                   {enq.customerName}
                 </td>
-                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] text-gray-600 ${isCompact ? 'max-w-[200px] line-clamp-2' : 'w-[25%] max-w-0 truncate'}`}>
+                <td className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] text-gray-600 ${isCompact ? 'max-w-[200px] line-clamp-2' : 'w-[25%] max-w-0 truncate'}`}>
                   {enq.leadOverview}
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px]">
                   <div className="flex flex-wrap gap-1">
                     {enq.revenueRoles.map(uid => {
                       const user = MOCK_USERS.find(u => u.id === uid);
@@ -690,22 +690,22 @@ export default function EnquiryList({
                     })}
                   </div>
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-emerald-700 whitespace-nowrap">
                   {enq.id}
                 </td>
                 {statusTab === 'Converted' && (
-                  <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-blue-700 whitespace-nowrap">
+                  <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-blue-700 whitespace-nowrap">
                     {enq.orderId || '-'}
                   </td>
                 )}
-                <td className="px-4 py-0.5 border-r border-gray-100 whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 whitespace-nowrap">
                   <span className={`px-2 py-0 rounded-full text-[9px] font-bold uppercase ${
                     enq.type === 'MTO' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
                   }`}>
                     {enq.type}
                   </span>
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px]">
                   <div className="flex flex-nowrap gap-1">
                     {enq.supplyRoles.map(uid => {
                       const user = MOCK_USERS.find(u => u.id === uid);
@@ -721,29 +721,29 @@ export default function EnquiryList({
                     })}
                   </div>
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
                   {(() => {
                     const urgency = getUrgencyInfo(enq.revenueActions);
                     return <span className={urgency.color}>{urgency.text}</span>;
                   })()}
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
                   {(() => {
                     const urgency = getUrgencyInfo(enq.supplyActions);
                     return <span className={urgency.color}>{urgency.text}</span>;
                   })()}
                 </td>
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px] font-bold whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-bold whitespace-nowrap">
                   {formatIndianCurrency(enq.expectedValue)}
                 </td>
-                <td className="px-4 py-0.5 text-[10px] text-gray-400 whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 text-[10px] text-gray-400 whitespace-nowrap">
                   {formatDate(enq.createdOn)}
                 </td>
               </tr>
             ))}
             {filteredEnquiries.length === 0 && (
               <tr>
-                <td colSpan={statusTab === 'Converted' ? 11 : 10} className="px-4 py-10 text-center text-gray-400 text-xs italic">
+                <td colSpan={statusTab === 'Converted' ? 11 : 10} className="px-2 min-[height:801px]:px-4 py-4 min-[height:801px]:py-10 text-center text-gray-400 text-xs italic">
                   No enquiries found matching your filters.
                 </td>
               </tr>

@@ -41,7 +41,7 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
         animate={{ width: isCollapsed ? '64px' : '200px' }}
         className="bg-[#151619] text-white flex flex-col border-r border-white/10 shrink-0"
       >
-        <div className="p-4 flex items-center justify-between border-b border-white/5 h-14">
+        <div className="p-2 min-[height:801px]:p-4 flex items-center justify-between border-b border-white/5 h-10 min-[height:801px]:h-14">
           {!isCollapsed && (
             <motion.span 
               initial={{ opacity: 0 }}
@@ -59,7 +59,7 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
           </button>
         </div>
 
-        <nav className="flex-1 py-2 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 py-1 min-[height:801px]:py-2 overflow-y-auto no-scrollbar">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -67,7 +67,7 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
               <button
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
-                className={`w-full flex items-center px-4 py-2.5 gap-3 transition-colors relative group ${
+                className={`w-full flex items-center px-4 py-1.5 min-[height:801px]:py-2.5 gap-3 transition-colors relative group ${
                   isActive ? 'text-emerald-400 bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -88,7 +88,7 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        <div className="p-2 min-[height:801px]:p-4 border-t border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold">
               M
