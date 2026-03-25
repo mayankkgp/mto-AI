@@ -44,9 +44,16 @@ interface EnquiryListProps {
   onEnquiryClick: (enquiry: Enquiry) => void;
   onCreateNew: () => void;
   isCompact?: boolean;
+  activeEnquiryId?: string | null;
 }
 
-export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, isCompact = false }: EnquiryListProps) {
+export default function EnquiryList({ 
+  enquiries, 
+  onEnquiryClick, 
+  onCreateNew, 
+  isCompact = false,
+  activeEnquiryId = null
+}: EnquiryListProps) {
   const [statusTab, setStatusTab] = useState<EnquiryStatus>('Active');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -336,7 +343,9 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
 
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+        
+        // Secondary fallback: expectedValue (Descending)
+        return (b.expectedValue || 0) - (a.expectedValue || 0);
       });
     }
 
@@ -478,44 +487,54 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Quick Access: Lead Type */}
-          <div className="relative" ref={typeMenuRef}>
-            <button 
-              onClick={() => setShowTypeMenu(!showTypeMenu)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-            >
-              <span>{typeFilter ? `Type: ${typeFilter}` : 'Type: All'}</span>
-              <ChevronDown size={12} className={`transition-transform ${showTypeMenu ? 'rotate-180' : ''}`} />
-            </button>
-            {showTypeMenu && (
-              <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1">
-                <button
-                  onClick={() => { setTypeFilter(''); setShowTypeMenu(false); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
-                >
-                  All Types
-                  {typeFilter === '' && <Check size={12} />}
-                </button>
-                {['MTO', 'Ready'].map(t => (
+          {!isCompact && (
+            <div className="relative" ref={typeMenuRef}>
+              <button 
+                onClick={() => setShowTypeMenu(!showTypeMenu)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+              >
+                <span>{typeFilter ? `Type: ${typeFilter}` : 'Type: All'}</span>
+                <ChevronDown size={12} className={`transition-transform ${showTypeMenu ? 'rotate-180' : ''}`} />
+              </button>
+              {showTypeMenu && (
+                <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1">
                   <button
-                    key={t}
-                    onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => { setTypeFilter(''); setShowTypeMenu(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
-                    {t}
-                    {typeFilter === t && <Check size={12} />}
+                    All Types
+                    {typeFilter === '' && <Check size={12} />}
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
+                  {['MTO', 'Ready'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      {t}
+                      {typeFilter === t && <Check size={12} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Quick Access: Revenue Role */}
           <div className="relative" ref={revMenuRef}>
             <button 
               onClick={() => setShowRevMenu(!showRevMenu)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+              title={isCompact ? (revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All') : ''}
             >
-              <span>{revenueFilter.length > 0 ? `Rev: ${revenueFilter.length}` : 'Rev Role: All'}</span>
+              {isCompact ? (
+                <div className="flex items-center gap-1">
+                  <UserIcon size={14} />
+                  {revenueFilter.length > 0 && <span className="text-[10px]">{revenueFilter.length}</span>}
+                </div>
+              ) : (
+                <span>{revenueFilter.length > 0 ? `Rev: ${revenueFilter.length}` : 'Rev Role: All'}</span>
+              )}
               <ChevronDown size={12} className={`transition-transform ${showRevMenu ? 'rotate-180' : ''}`} />
             </button>
             {showRevMenu && (
@@ -551,10 +570,15 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
               <button 
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-l text-xs font-bold hover:bg-black/5 transition-colors shrink-0`}
-                title="More Filters"
+                title={isCompact ? `Filter${activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}` : "More Filters"}
               >
                 <Filter size={14} />
-                <span>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>
+                {!isCompact && <span>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>}
+                {isCompact && activeFilters.length > 0 && (
+                  <span className="flex items-center justify-center bg-emerald-600 text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none">
+                    {activeFilters.length}
+                  </span>
+                )}
               </button>
               {activeFilters.length > 0 && (
                 <button 
@@ -616,23 +640,19 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
       {/* Table */}
       <div className="flex-1 overflow-auto bg-white">
         <table className="w-full border-collapse text-left">
-          <thead className="sticky top-0 bg-gray-50 z-10 border-b border-gray-200">
-            <tr className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
-              <SortHeader label="ID" sortKey="id" />
-              {statusTab === 'Converted' && <th className="px-4 py-1 border-r border-gray-200">Order ID</th>}
-              <SortHeader label="Customer" sortKey="customerName" />
-              <th className="px-4 py-1 border-r border-gray-200">Overview</th>
-              {!isCompact && (
-                <>
-                  <th className="px-4 py-1 border-r border-gray-200">Type</th>
-                  <th className="px-4 py-1 border-r border-gray-200">Revenue</th>
-                  <th className="px-4 py-1 border-r border-gray-200">Supply</th>
-                  <SortHeader label="Rev Action" sortKey="revAction" />
-                  <SortHeader label="Sup Action" sortKey="supAction" />
-                </>
-              )}
-              <SortHeader label="Exp Value" sortKey="expectedValue" />
-              {!isCompact && <SortHeader label="Created" sortKey="createdOn" />}
+          <thead className="sticky top-0 bg-gray-50 z-30 border-b border-gray-200">
+            <tr className="text-[10px] uppercase tracking-wider text-gray-500 font-bold whitespace-nowrap">
+              <SortHeader label="Customer" sortKey="customerName" className="sticky left-0 z-40 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[150px]" />
+              <th className={`px-4 py-1 border-r border-gray-200 min-w-[200px] ${isCompact ? 'w-[200px]' : 'w-[25%]'}`}>Overview</th>
+              <th className="px-4 py-1 border-r border-gray-200 min-w-[100px]">Rev Role</th>
+              <SortHeader label="ID" sortKey="id" className="min-w-[100px]" />
+              {statusTab === 'Converted' && <th className="px-4 py-1 border-r border-gray-200 min-w-[120px]">Order ID</th>}
+              <th className="px-4 py-1 border-r border-gray-200 min-w-[80px]">Type</th>
+              <th className="px-4 py-1 border-r border-gray-200 min-w-[120px]">Supply</th>
+              <SortHeader label="Rev Action" sortKey="revAction" className="min-w-[120px]" />
+              <SortHeader label="Sup Action" sortKey="supAction" className="min-w-[120px]" />
+              <SortHeader label="Exp Value" sortKey="expectedValue" className="min-w-[110px]" />
+              <SortHeader label="Created" sortKey="createdOn" className="min-w-[100px]" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -640,90 +660,90 @@ export default function EnquiryList({ enquiries, onEnquiryClick, onCreateNew, is
               <tr 
                 key={enq.id}
                 onClick={() => onEnquiryClick(enq)}
-                className="hover:bg-emerald-50 cursor-pointer transition-colors group"
+                className={`cursor-pointer transition-colors group relative align-top ${
+                  activeEnquiryId === enq.id 
+                    ? 'bg-emerald-50' 
+                    : 'hover:bg-emerald-50 bg-white'
+                }`}
               >
-                <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-emerald-700">
+                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
+                  activeEnquiryId === enq.id ? 'bg-emerald-50 border-l-4 border-emerald-500' : 'bg-inherit'
+                }`}>
+                  {enq.customerName}
+                </td>
+                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] text-gray-600 ${isCompact ? 'max-w-[200px] line-clamp-2' : 'w-[25%] max-w-0 truncate'}`}>
+                  {enq.leadOverview}
+                </td>
+                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
+                  <div className="flex flex-wrap gap-1">
+                    {enq.revenueRoles.map(uid => {
+                      const user = MOCK_USERS.find(u => u.id === uid);
+                      return (
+                        <div 
+                          key={uid} 
+                          className="px-1 py-0 bg-gray-100 text-gray-600 rounded text-[9px] font-bold border border-gray-200" 
+                          title={user?.name}
+                        >
+                          {user ? getInitials(user.name) : '??'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </td>
+                <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-emerald-700 whitespace-nowrap">
                   {enq.id}
                 </td>
                 {statusTab === 'Converted' && (
-                  <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-blue-700">
+                  <td className="px-4 py-0.5 border-r border-gray-100 font-mono text-[11px] font-bold text-blue-700 whitespace-nowrap">
                     {enq.orderId || '-'}
                   </td>
                 )}
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px] font-semibold">
-                  {enq.customerName}
+                <td className="px-4 py-0.5 border-r border-gray-100 whitespace-nowrap">
+                  <span className={`px-2 py-0 rounded-full text-[9px] font-bold uppercase ${
+                    enq.type === 'MTO' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
+                  }`}>
+                    {enq.type}
+                  </span>
                 </td>
-                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] text-gray-600 truncate ${isCompact ? 'max-w-[100px]' : 'max-w-xs'}`}>
-                  {enq.leadOverview}
+                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
+                  <div className="flex flex-nowrap gap-1">
+                    {enq.supplyRoles.map(uid => {
+                      const user = MOCK_USERS.find(u => u.id === uid);
+                      return (
+                        <div 
+                          key={uid} 
+                          className="px-1 py-0 bg-gray-100 text-gray-600 rounded text-[9px] font-bold border border-gray-200 whitespace-nowrap" 
+                          title={user?.name}
+                        >
+                          {user ? getInitials(user.name) : '??'}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </td>
-                {!isCompact && (
-                  <>
-                    <td className="px-4 py-0.5 border-r border-gray-100">
-                      <span className={`px-2 py-0 rounded-full text-[9px] font-bold uppercase ${
-                        enq.type === 'MTO' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {enq.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
-                      <div className="flex flex-wrap gap-1">
-                        {enq.revenueRoles.map(uid => {
-                          const user = MOCK_USERS.find(u => u.id === uid);
-                          return (
-                            <div 
-                              key={uid} 
-                              className="px-1 py-0 bg-gray-100 text-gray-600 rounded text-[9px] font-bold border border-gray-200" 
-                              title={user?.name}
-                            >
-                              {user ? getInitials(user.name) : '??'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 py-0.5 border-r border-gray-100 text-[11px]">
-                      <div className="flex flex-wrap gap-1">
-                        {enq.supplyRoles.map(uid => {
-                          const user = MOCK_USERS.find(u => u.id === uid);
-                          return (
-                            <div 
-                              key={uid} 
-                              className="px-1 py-0 bg-gray-100 text-gray-600 rounded text-[9px] font-bold border border-gray-200" 
-                              title={user?.name}
-                            >
-                              {user ? getInitials(user.name) : '??'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 py-0.5 border-r border-gray-100 text-[10px]">
-                      {(() => {
-                        const urgency = getUrgencyInfo(enq.revenueActions);
-                        return <span className={urgency.color}>{urgency.text}</span>;
-                      })()}
-                    </td>
-                    <td className="px-4 py-0.5 border-r border-gray-100 text-[10px]">
-                      {(() => {
-                        const urgency = getUrgencyInfo(enq.supplyActions);
-                        return <span className={urgency.color}>{urgency.text}</span>;
-                      })()}
-                    </td>
-                  </>
-                )}
-                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px] font-bold">
+                <td className="px-4 py-0.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
+                  {(() => {
+                    const urgency = getUrgencyInfo(enq.revenueActions);
+                    return <span className={urgency.color}>{urgency.text}</span>;
+                  })()}
+                </td>
+                <td className="px-4 py-0.5 border-r border-gray-100 text-[10px] whitespace-nowrap">
+                  {(() => {
+                    const urgency = getUrgencyInfo(enq.supplyActions);
+                    return <span className={urgency.color}>{urgency.text}</span>;
+                  })()}
+                </td>
+                <td className="px-4 py-0.5 border-r border-gray-100 text-[11px] font-bold whitespace-nowrap">
                   {formatIndianCurrency(enq.expectedValue)}
                 </td>
-                {!isCompact && (
-                  <td className="px-4 py-0.5 text-[10px] text-gray-400">
-                    {formatDate(enq.createdOn)}
-                  </td>
-                )}
+                <td className="px-4 py-0.5 text-[10px] text-gray-400 whitespace-nowrap">
+                  {formatDate(enq.createdOn)}
+                </td>
               </tr>
             ))}
             {filteredEnquiries.length === 0 && (
               <tr>
-                <td colSpan={isCompact ? (statusTab === 'Converted' ? 5 : 4) : (statusTab === 'Converted' ? 11 : 10)} className="px-4 py-10 text-center text-gray-400 text-xs italic">
+                <td colSpan={statusTab === 'Converted' ? 11 : 10} className="px-4 py-10 text-center text-gray-400 text-xs italic">
                   No enquiries found matching your filters.
                 </td>
               </tr>

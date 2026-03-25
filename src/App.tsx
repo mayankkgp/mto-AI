@@ -91,6 +91,7 @@ export default function App() {
               onEnquiryClick={handleEnquiryClick}
               onCreateNew={handleCreateNew}
               isCompact={isDetailOpen}
+              activeEnquiryId={isDetailOpen ? selectedEnquiry?.id : null}
             />
           </motion.div>
 

@@ -453,7 +453,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   return (
     <div className="h-full bg-white flex flex-col border-l border-gray-200">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
+      <div className="px-4 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-gray-800 uppercase tracking-tight">
               {enquiry ? enquiry.id : `Create New Enquiry: ${formData.id}`}
