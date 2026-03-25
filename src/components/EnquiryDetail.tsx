@@ -17,7 +17,9 @@ import {
   FileText,
   Truck,
   FileSpreadsheet,
-  File
+  File,
+  UserPlus,
+  Check
 } from 'lucide-react';
 import { Enquiry, ActionItem, Customer, User, EnquiryType, LeadChannel } from '../types';
 import { MOCK_CUSTOMERS, MOCK_USERS } from '../mockData';
@@ -69,23 +71,74 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   const [internalEnquiry, setInternalEnquiry] = useState<Enquiry | null>(enquiry);
   const [pendingAction, setPendingAction] = useState<{ type: 'close' } | { type: 'switch', enquiry: Enquiry | null } | null>(null);
   const [showAutoSaveError, setShowAutoSaveError] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const isSavingRef = useRef(false);
 
   const [formData, setFormData] = useState<Partial<Enquiry>>(
     enquiry || getDefaultFormData(nextEnquiryId)
   );
 
+  const defaultFormData = React.useMemo(() => ({
+    id: nextEnquiryId,
+    customerName: '',
+    city: '',
+    poc: '',
+    contact: '',
+    leadOverview: '',
+    leadDetails: '',
+    type: 'MTO' as const,
+    revenueRoles: ['u1'],
+    supplyRoles: [],
+    orderValue: 0,
+    conversionProbability: 50,
+    expectedValue: 0,
+    status: 'Active' as const,
+    leadDate: new Date().toISOString().split('T')[0],
+    revenueActions: [],
+    supplyActions: [],
+    files: []
+  }), [nextEnquiryId]);
+
   const isDirty = React.useMemo(() => {
     if (!internalEnquiry) {
-      return formData.customerName !== '' || formData.city !== '' || formData.leadOverview !== '';
+      return JSON.stringify(formData) !== JSON.stringify(defaultFormData);
     }
     return JSON.stringify(formData) !== JSON.stringify(internalEnquiry);
-  }, [formData, internalEnquiry]);
+  }, [formData, internalEnquiry, defaultFormData]);
+
+  const validateForm = () => {
+    const errors: string[] = [];
+    if (!formData.customerName?.trim()) errors.push('customerName');
+    if (!formData.city?.trim()) errors.push('city');
+    if (!formData.poc?.trim()) errors.push('poc');
+    if (!formData.contact?.trim()) errors.push('contact');
+    if (!formData.leadOverview?.trim()) errors.push('leadOverview');
+    if (!formData.type) errors.push('type');
+    if (!formData.revenueRoles || formData.revenueRoles.length === 0) errors.push('revenueRoles');
+    
+    setValidationErrors(errors);
+
+    // Force expand customer details if there are errors inside it
+    if (errors.some(e => ['city', 'poc', 'contact'].includes(e))) {
+      setIsCustomerExpanded(true);
+    }
+
+    return errors;
+  };
 
   useEffect(() => {
-    if (enquiry?.id !== internalEnquiry?.id && !isSavingRef.current && !showAutoSaveError) {
+    if (enquiry?.id !== internalEnquiry?.id && !isSavingRef.current && !showAutoSaveError && !showValidationModal) {
       if (isDirty) {
         const action = { type: 'switch' as const, enquiry };
+        
+        const errors = validateForm();
+        if (errors.length > 0) {
+          setPendingAction(action);
+          setShowValidationModal(true);
+          return;
+        }
+
         setPendingAction(action);
         
         const doSave = async () => {
@@ -95,6 +148,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             setInternalEnquiry(enquiry);
             setFormData(enquiry || getDefaultFormData(nextEnquiryId));
             setPendingAction(null);
+            setValidationErrors([]);
           } catch (error) {
             setShowAutoSaveError(true);
           } finally {
@@ -105,12 +159,20 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       } else {
         setInternalEnquiry(enquiry);
         setFormData(enquiry || getDefaultFormData(nextEnquiryId));
+        setValidationErrors([]);
       }
     }
-  }, [enquiry, internalEnquiry, isDirty, showAutoSaveError, nextEnquiryId, onSave, formData]);
+  }, [enquiry, internalEnquiry, isDirty, showAutoSaveError, showValidationModal, nextEnquiryId, onSave, formData]);
 
   const handleCloseRequest = async () => {
     if (isDirty) {
+      const errors = validateForm();
+      if (errors.length > 0) {
+        setPendingAction({ type: 'close' });
+        setShowValidationModal(true);
+        return;
+      }
+
       setPendingAction({ type: 'close' });
       isSavingRef.current = true;
       try {
@@ -123,6 +185,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       }
     } else {
       onClose();
+    }
+  };
+
+  const handleManualSave = async () => {
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setShowValidationModal(true);
+      return;
+    }
+
+    isSavingRef.current = true;
+    try {
+      await onSave(formData as Enquiry);
+      setInternalEnquiry(formData as Enquiry);
+      setValidationErrors([]);
+    } catch (error) {
+      setShowAutoSaveError(true);
+    } finally {
+      isSavingRef.current = false;
     }
   };
 
@@ -147,6 +228,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   const handleDiscardChanges = () => {
     setShowAutoSaveError(false);
+    setShowValidationModal(false);
+    setValidationErrors([]);
     if (pendingAction?.type === 'close') {
       onClose();
     } else if (pendingAction?.type === 'switch') {
@@ -159,9 +242,134 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
+  const [actionValidationErrors, setActionValidationErrors] = useState<string[]>([]);
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(!enquiry);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Reset validation errors on interaction
+  useEffect(() => {
+    if (validationErrors.length > 0) {
+      const remainingErrors = validationErrors.filter(field => {
+        const value = formData[field as keyof Enquiry];
+        if (field === 'revenueRoles') {
+          return !value || (value as string[]).length === 0;
+        }
+        if (typeof value === 'string') {
+          return !value.trim();
+        }
+        return !value;
+      });
+      
+      if (remainingErrors.length !== validationErrors.length) {
+        setValidationErrors(remainingErrors);
+      }
+    }
+  }, [formData, validationErrors]);
+
+  // Helper for initials
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Custom User Selector Component
+  const UserSelector = ({ 
+    users, 
+    selectedUsers, 
+    onToggle,
+    children
+  }: { 
+    users: User[], 
+    selectedUsers: string[], 
+    onToggle: (userId: string) => void,
+    children: React.ReactNode
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        // Auto-focus search input when popover opens
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      } else {
+        setSearchQuery(''); // Reset search when closed
+      }
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
+
+    const filteredUsers = users.filter(user => 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <div className="relative" ref={containerRef}>
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="cursor-pointer"
+        >
+          {children}
+        </div>
+        
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded shadow-xl min-w-[160px] py-1 overflow-hidden flex flex-col"
+            >
+              <div className="px-2 py-1 border-b border-gray-50 mb-1">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search users..."
+                  className="w-full px-1.5 py-1 text-[10px] bg-gray-50 border border-gray-100 rounded outline-none focus:border-emerald-400 transition-colors"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="max-h-[160px] overflow-y-auto no-scrollbar">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map(user => {
+                    const isSelected = selectedUsers.includes(user.id);
+                    return (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => {
+                          onToggle(user.id);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 text-[10px] flex items-center justify-between transition-colors ${
+                          isSelected 
+                            ? 'bg-emerald-50 text-emerald-700 font-bold' 
+                            : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        <span className="truncate">{user.name}</span>
+                        {isSelected && <Check size={10} className="text-emerald-600 shrink-0" />}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-2 py-3 text-center text-[10px] text-gray-400 italic">
+                    No users found
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
   
   // File Preview States
   const [hoveredFile, setHoveredFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string; x: number; y: number } | null>(null);
@@ -217,8 +425,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     return { isImage, isPdf, isDoc, isWord, isExcel, mimeType, displaySize };
   };
 
-  const revActionInputRef = useRef<HTMLInputElement>(null);
-  const supActionInputRef = useRef<HTMLInputElement>(null);
+  const actionTextRef = useRef<HTMLTextAreaElement>(null);
+  const actionDateRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overviewRef = useRef<HTMLTextAreaElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
@@ -357,7 +565,35 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   };
 
   const addActionItem = (type: 'revenue' | 'supply') => {
-    if (!newAction.text || !newAction.date) return;
+    const errors: string[] = [];
+    if (!newAction.text.trim()) errors.push('text');
+    if (!newAction.date) errors.push('date');
+
+    if (errors.length > 0) {
+      // CRITICAL: Execute native DOM APIs (focus/showPicker) synchronously 
+      // BEFORE React state updates to satisfy browser User Gesture requirements.
+      if (errors.includes('text')) {
+        actionTextRef.current?.focus();
+      } else if (errors.includes('date')) {
+        const dateInput = actionDateRef.current;
+        if (dateInput) {
+          dateInput.focus();
+          // Modern browsers require showPicker() to be called in the same synchronous 
+          // execution thread as the user gesture.
+          if ('showPicker' in dateInput) {
+            try {
+              (dateInput as any).showPicker();
+            } catch (e) {
+              console.warn('Failed to open date picker programmatically:', e);
+            }
+          }
+        }
+      }
+
+      // Update React state AFTER triggering the native picker
+      setActionValidationErrors(errors);
+      return;
+    }
     
     const item: ActionItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -374,13 +610,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       setFormData(prev => ({ ...prev, supplyActions: [...(prev.supplyActions || []), item] }));
     }
     setNewAction({ text: '', date: '', remark: '', type });
+    setActionValidationErrors([]);
     
-    // Focus back to the correct input
-    if (type === 'revenue') {
-      revActionInputRef.current?.focus();
-    } else {
-      supActionInputRef.current?.focus();
-    }
+    // Focus back to the text input for the next item
+    actionTextRef.current?.focus();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -487,7 +720,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             )}
             <div className="w-px h-6 bg-gray-200 mx-1" />
             <button 
-              onClick={() => onSave(formData as Enquiry)}
+              onClick={handleManualSave}
               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
             >
               <Save size={14} /> SAVE
@@ -527,7 +760,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="relative">
                   <input 
                     list="customers"
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                   />
@@ -553,7 +786,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0 col-span-2">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
@@ -561,7 +794,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
@@ -569,7 +802,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -580,7 +813,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">City *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
@@ -588,7 +821,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">POC *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
@@ -596,7 +829,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="text-[9px] font-bold text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -614,7 +847,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={overviewRef}
                   rows={1}
-                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
+                  className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto`}
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
@@ -638,7 +871,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
                   <label className="text-[9px] font-bold text-gray-400 uppercase">Type *</label>
-                  <div className="flex bg-white border border-gray-200 rounded p-0.5">
+                  <div className={`flex bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded p-0.5`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
                         key={t}
@@ -661,7 +894,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     type="date"
                     className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[10px] outline-none"
                     value={formData.leadDate}
-                    onChange={(e) => setFormData({...formData, leadDate: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, leadDate: e.target.value});
+                      e.target.blur();
+                    }}
                   />
                 </div>
                 <div className="space-y-0">
@@ -771,47 +1007,69 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="grid grid-cols-2 gap-1.5 mt-1">
                 <div className="space-y-0">
                   <label className="text-[9px] font-bold text-gray-400 uppercase">Revenue Role *</label>
-                  <div className="flex flex-wrap gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px]">
-                    {formData.revenueRoles?.map(uid => (
-                      <span key={uid} className="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
-                        {MOCK_USERS.find(u => u.id === uid)?.name}
-                        <button onClick={() => setFormData({...formData, revenueRoles: formData.revenueRoles?.filter(id => id !== uid)})}><X size={10} /></button>
-                      </span>
-                    ))}
-                    <select 
-                      className="bg-transparent text-[9px] outline-none"
-                      onChange={(e) => {
-                        if (e.target.value && !formData.revenueRoles?.includes(e.target.value)) {
-                          setFormData({...formData, revenueRoles: [...(formData.revenueRoles || []), e.target.value]});
-                        }
-                      }}
-                    >
-                      <option value="">+ Add</option>
-                      {MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                    </select>
-                  </div>
+                  <UserSelector 
+                    users={MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin')}
+                    selectedUsers={formData.revenueRoles || []}
+                    onToggle={(userId) => {
+                      const current = formData.revenueRoles || [];
+                      if (current.includes(userId)) {
+                        setFormData({...formData, revenueRoles: current.filter(id => id !== userId)});
+                      } else {
+                        setFormData({...formData, revenueRoles: [...current, userId]});
+                      }
+                    }}
+                  >
+                    <div className={`flex flex-wrap items-center gap-1 p-1 bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[28px] hover:border-emerald-400 transition-colors`}>
+                      {formData.revenueRoles?.map(uid => {
+                        const user = MOCK_USERS.find(u => u.id === uid);
+                        return (
+                          <div 
+                            key={uid} 
+                            className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded text-[9px] font-bold border border-gray-200"
+                            title={user?.name}
+                          >
+                            {user ? getInitials(user.name) : '??'}
+                          </div>
+                        );
+                      })}
+                      <div className="p-0.5 text-gray-400 hover:text-emerald-600">
+                        <UserPlus size={12} />
+                      </div>
+                    </div>
+                  </UserSelector>
                 </div>
                 <div className="space-y-0">
                   <label className="text-[9px] font-bold text-gray-400 uppercase">Supply Role</label>
-                  <div className="flex flex-wrap gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px]">
-                    {formData.supplyRoles?.map(uid => (
-                      <span key={uid} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-[9px] font-bold flex items-center gap-1">
-                        {MOCK_USERS.find(u => u.id === uid)?.name}
-                        <button onClick={() => setFormData({...formData, supplyRoles: formData.supplyRoles?.filter(id => id !== uid)})}><X size={10} /></button>
-                      </span>
-                    ))}
-                    <select 
-                      className="bg-transparent text-[9px] outline-none"
-                      onChange={(e) => {
-                        if (e.target.value && !formData.supplyRoles?.includes(e.target.value)) {
-                          setFormData({...formData, supplyRoles: [...(formData.supplyRoles || []), e.target.value]});
-                        }
-                      }}
-                    >
-                      <option value="">+ Add</option>
-                      {MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                    </select>
-                  </div>
+                  <UserSelector 
+                    users={MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin')}
+                    selectedUsers={formData.supplyRoles || []}
+                    onToggle={(userId) => {
+                      const current = formData.supplyRoles || [];
+                      if (current.includes(userId)) {
+                        setFormData({...formData, supplyRoles: current.filter(id => id !== userId)});
+                      } else {
+                        setFormData({...formData, supplyRoles: [...current, userId]});
+                      }
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px] hover:border-blue-400 transition-colors">
+                      {formData.supplyRoles?.map(uid => {
+                        const user = MOCK_USERS.find(u => u.id === uid);
+                        return (
+                          <div 
+                            key={uid} 
+                            className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded text-[9px] font-bold border border-gray-200"
+                            title={user?.name}
+                          >
+                            {user ? getInitials(user.name) : '??'}
+                          </div>
+                        );
+                      })}
+                      <div className="p-0.5 text-gray-400 hover:text-blue-600">
+                        <UserPlus size={12} />
+                      </div>
+                    </div>
+                  </UserSelector>
                 </div>
               </div>
 
@@ -827,16 +1085,30 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-1">
                   <label className="text-[8px] font-bold text-gray-400 uppercase">Action Item *</label>
                   <textarea 
+                    ref={actionTextRef}
                     rows={1}
                     placeholder="What needs to be done?"
-                    className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
+                    className={`w-full bg-gray-50 border rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
+                      actionValidationErrors.includes('text') 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-200'
+                    } ${
                       newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
                     }`}
                     value={newAction.text}
                     onChange={(e) => {
                       setNewAction({...newAction, text: e.target.value});
+                      if (actionValidationErrors.includes('text')) {
+                        setActionValidationErrors(prev => prev.filter(err => err !== 'text'));
+                      }
                       e.target.style.height = 'auto';
                       e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        addActionItem(newAction.type);
+                      }
                     }}
                   />
                 </div>
@@ -890,12 +1162,23 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       <div className="space-y-1">
                         <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
                         <input 
+                          ref={actionDateRef}
                           type="date"
-                          className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                          className={`w-full bg-gray-50 border rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                            actionValidationErrors.includes('date')
+                              ? 'border-red-500 bg-red-50'
+                              : 'border-gray-200'
+                          } ${
                             newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
                           }`}
                           value={newAction.date}
-                          onChange={(e) => setNewAction({...newAction, date: e.target.value})}
+                          onChange={(e) => {
+                            setNewAction({...newAction, date: e.target.value});
+                            if (actionValidationErrors.includes('date')) {
+                              setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
+                            }
+                            e.target.blur();
+                          }}
                         />
                       </div>
 
@@ -943,12 +1226,23 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     <div className="space-y-1">
                       <label className="text-[8px] font-bold text-gray-400 uppercase">Due Date *</label>
                       <input 
+                        ref={actionDateRef}
                         type="date"
-                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                        className={`w-full bg-gray-50 border rounded px-2 py-1 text-[10px] outline-none transition-colors h-[28px] ${
+                          actionValidationErrors.includes('date')
+                            ? 'border-red-500 bg-red-50'
+                            : 'border-gray-200'
+                        } ${
                           newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
                         }`}
                         value={newAction.date}
-                        onChange={(e) => setNewAction({...newAction, date: e.target.value})}
+                        onChange={(e) => {
+                          setNewAction({...newAction, date: e.target.value});
+                          if (actionValidationErrors.includes('date')) {
+                            setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
+                          }
+                          e.target.blur();
+                        }}
                       />
                     </div>
 
@@ -1016,7 +1310,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                                 autoFocus
                                 className="float-right bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
                                 value={item.dueDate}
-                                onChange={(e) => updateActionItem(item.id, 'revenue', 'dueDate', e.target.value)}
+                                onChange={(e) => {
+                                  updateActionItem(item.id, 'revenue', 'dueDate', e.target.value);
+                                  e.target.blur();
+                                }}
                                 onBlur={() => setEditingAction(null)}
                                 onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
                               />
@@ -1113,7 +1410,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                                 autoFocus
                                 className="float-right bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
                                 value={item.dueDate}
-                                onChange={(e) => updateActionItem(item.id, 'supply', 'dueDate', e.target.value)}
+                                onChange={(e) => {
+                                  updateActionItem(item.id, 'supply', 'dueDate', e.target.value);
+                                  e.target.blur();
+                                }}
                                 onBlur={() => setEditingAction(null)}
                                 onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
                               />
@@ -1488,6 +1788,52 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       Delete
                     </button>
                   </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Validation Modal */}
+        <AnimatePresence>
+          {showValidationModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Required Fields</h3>
+                <div className="text-sm text-gray-500 mb-6">
+                  <p className="mb-3">Please fill in all mandatory fields before saving or navigating:</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {validationErrors.map(err => (
+                      <span key={err} className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded border border-red-100 uppercase tracking-tight">
+                        {err === 'revenueRoles' ? 'Revenue Role' : 
+                         err === 'customerName' ? 'Customer Name' :
+                         err === 'leadOverview' ? 'Lead Overview' :
+                         err.charAt(0).toUpperCase() + err.slice(1)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDiscardChanges}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors"
+                  >
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={() => setShowValidationModal(false)}
+                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors"
+                  >
+                    Fix Errors
+                  </button>
                 </div>
               </motion.div>
             </div>

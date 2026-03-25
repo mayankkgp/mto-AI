@@ -184,11 +184,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateStart} onChange={(e) => setLeadDateStart(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateStart} onChange={(e) => { setLeadDateStart(e.target.value); e.target.blur(); }} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateEnd} onChange={(e) => setLeadDateEnd(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateEnd} onChange={(e) => { setLeadDateEnd(e.target.value); e.target.blur(); }} />
             </div>
           </div>
         );
@@ -197,11 +197,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueStart} onChange={(e) => setRevDueStart(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueStart} onChange={(e) => { setRevDueStart(e.target.value); e.target.blur(); }} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueEnd} onChange={(e) => setRevDueEnd(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueEnd} onChange={(e) => { setRevDueEnd(e.target.value); e.target.blur(); }} />
             </div>
           </div>
         );
@@ -210,11 +210,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueStart} onChange={(e) => setSupDueStart(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueStart} onChange={(e) => { setSupDueStart(e.target.value); e.target.blur(); }} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueEnd} onChange={(e) => setSupDueEnd(e.target.value)} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueEnd} onChange={(e) => { setSupDueEnd(e.target.value); e.target.blur(); }} />
             </div>
           </div>
         );
@@ -662,12 +662,12 @@ export default function EnquiryList({
                 onClick={() => onEnquiryClick(enq)}
                 className={`cursor-pointer transition-colors group relative align-top ${
                   activeEnquiryId === enq.id 
-                    ? 'bg-emerald-50' 
-                    : 'hover:bg-emerald-50 bg-white'
+                    ? 'bg-emerald-50/60 hover:bg-emerald-100/40' 
+                    : 'bg-white hover:bg-gray-50'
                 }`}
               >
-                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
-                  activeEnquiryId === enq.id ? 'bg-emerald-50 border-l-4 border-emerald-500' : 'bg-inherit'
+                <td className={`px-4 py-0.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors ${
+                  activeEnquiryId === enq.id ? 'bg-inherit border-l-[3px] border-emerald-600' : 'bg-inherit border-l-[3px] border-transparent'
                 }`}>
                   {enq.customerName}
                 </td>
