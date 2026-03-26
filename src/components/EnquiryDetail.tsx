@@ -269,7 +269,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   // Helper for initials
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0) return '??';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
   };
 
   // Custom User Selector Component
@@ -372,7 +375,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   };
   
   // File Preview States
-  const [hoveredFile, setHoveredFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string; x: number; y: number; transform: string } | null>(null);
+  const [hoveredFile, setHoveredFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string; x: number; y: number; yOffset: string; constrainedHeight: number } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<{ file: string; fileName: string; isImage: boolean; isPdf: boolean; isDoc: boolean; isWord: boolean; isExcel: boolean; mimeType: string; displaySize: string } | null>(null);
   const [securePdfUrl, setSecurePdfUrl] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -509,16 +512,35 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   // File Hover Handlers
   const handleFileMouseEnter = (e: React.MouseEvent, file: string, fileName: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const cursorY = rect.top - 10; // Position above the thumbnail
-    const popoverHeight = 400; // Max height of the popover
+    let x = rect.left + rect.width / 2;
+    const popoverWidth = 320;
+    const halfWidth = popoverWidth / 2;
+    const popoverHeight = 400; // Max desired height of the popover
+    
+    // Constrain x to keep popover within viewport horizontally
+    if (x - halfWidth < 10) {
+      x = halfWidth + 10;
+    } else if (x + halfWidth > window.innerWidth - 10) {
+      x = window.innerWidth - halfWidth - 10;
+    }
+    
+    // Calculate available space
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
 
-    let transform = 'translate(-50%, -100%)';
-    let y = cursorY;
+    let yOffset = '-100%';
+    let y = rect.top - 10; // Default position above
+    let constrainedHeight = popoverHeight;
 
-    if (cursorY - popoverHeight < 0) {
-      transform = 'translate(-50%, 10px)';
+    // Choose the direction with more space if default doesn't fit
+    if (spaceAbove < popoverHeight && spaceBelow > spaceAbove) {
+      // Flip downwards
+      yOffset = '10px';
       y = rect.bottom;
+      constrainedHeight = Math.min(popoverHeight, spaceBelow - 10);
+    } else {
+      // Keep upwards, but constrain height if necessary
+      constrainedHeight = Math.min(popoverHeight, spaceAbove - 10);
     }
 
     if (hoverTimeoutRef.current) {
@@ -527,7 +549,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     
     hoverTimeoutRef.current = setTimeout(() => {
       const fileInfo = getFileTypeInfo(file);
-      setHoveredFile({ file, fileName, ...fileInfo, x, y, transform });
+      setHoveredFile({ file, fileName, ...fileInfo, x, y, yOffset, constrainedHeight });
     }, 300);
   };
 
@@ -709,6 +731,44 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 {formData.status}
               </span>
             )}
+            
+            {/* Role Avatars */}
+            {(formData.revenueRoles?.length > 0 || formData.supplyRoles?.length > 0) && (
+              <div className="hidden sm:flex items-center gap-2 border-l border-gray-300 pl-3 shrink-0">
+                {formData.revenueRoles?.length > 0 && (
+                  <div className="flex -space-x-1.5" title="Revenue Roles">
+                    {formData.revenueRoles.map(uid => {
+                      const user = MOCK_USERS.find(u => u.id === uid);
+                      return user ? (
+                        <div 
+                          key={uid}
+                          className="w-5 h-5 rounded-full bg-red-100 text-red-700 border border-red-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
+                          title={user.name}
+                        >
+                          {getInitials(user.name)}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                {formData.supplyRoles?.length > 0 && (
+                  <div className="flex -space-x-1.5" title="Supply Roles">
+                    {formData.supplyRoles.map(uid => {
+                      const user = MOCK_USERS.find(u => u.id === uid);
+                      return user ? (
+                        <div 
+                          key={uid}
+                          className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
+                          title={user.name}
+                        >
+                          {getInitials(user.name)}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {formData.status === 'Active' && (
@@ -877,7 +937,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               </div>
 
               {/* Type, Lead Date, Channel */}
-              <div className="grid grid-cols-2 @[500px]:grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
                   <div className={`flex bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded p-0.5`}>
@@ -886,7 +946,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         key={t}
                         type="button"
                         onClick={() => setFormData({...formData, type: t})}
-                        className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${
+                        className={`flex-1 py-1 px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
                           formData.type === t 
                           ? 'bg-emerald-600 text-white shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-50'
@@ -901,7 +961,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Date</label>
                   <input 
                     type="date"
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[10px] outline-none"
+                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
                     value={formData.leadDate}
                     onChange={(e) => {
                       setFormData({...formData, leadDate: e.target.value});
@@ -912,7 +972,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Channel</label>
                   <select 
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                   >
@@ -983,12 +1043,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               </div>
 
               {/* Commercials */}
-              <div className="grid grid-cols-2 @[500px]:grid-cols-3 gap-1.5 mt-1">
+              <div className="grid grid-cols-3 gap-1.5 mt-1">
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Order Value (₹)</label>
                   <input 
                     type="text"
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
+                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
                     value={formatInputCurrency(formData.orderValue)}
                     onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
                   />
@@ -996,7 +1056,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Prob (%)</label>
                   <select 
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                   >
@@ -1006,14 +1066,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 </div>
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Expected Value</label>
-                  <div className="w-full px-2 py-1 bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold">
+                  <div className="w-full px-1 py-1 tracking-tight bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold">
                     {formatIndianCurrency(formData.expectedValue || 0)}
                   </div>
                 </div>
               </div>
 
               {/* Roles */}
-              <div className="grid grid-cols-1 @[500px]:grid-cols-2 gap-1.5 mt-1">
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
                 <div className="space-y-0">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Revenue Role *</label>
                   <UserSelector 
@@ -1545,29 +1605,29 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         <AnimatePresence>
           {hoveredFile && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95, x: '-50%', y: hoveredFile.yOffset }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: hoveredFile.yOffset }}
+              exit={{ opacity: 0, scale: 0.95, x: '-50%', y: hoveredFile.yOffset }}
               transition={{ duration: 0.15 }}
               className="fixed z-[70] pointer-events-none bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
               style={{
                 left: hoveredFile.x,
                 top: hoveredFile.y,
-                transform: hoveredFile.transform,
                 width: '320px',
                 height: 'auto',
-                maxHeight: '400px'
+                maxHeight: hoveredFile.constrainedHeight
               }}
             >
               {hoveredFile.isImage ? (
                 <img 
                   src={hoveredFile.file} 
                   alt={hoveredFile.fileName} 
-                  className="w-full h-auto max-h-[360px] object-contain bg-gray-50"
+                  className="w-full h-auto object-contain bg-gray-50"
+                  style={{ maxHeight: Math.max(0, hoveredFile.constrainedHeight - 40) }}
                   referrerPolicy="no-referrer"
                 />
               ) : hoveredFile.isPdf ? (
-                <div className="w-full h-[360px] bg-white flex items-center justify-center overflow-hidden">
+                <div className="w-full bg-white flex items-center justify-center overflow-hidden" style={{ height: hoveredFile.constrainedHeight }}>
                   <Document
                     file={hoveredFile.file}
                     loading={<div className="text-gray-400 text-sm font-medium">Loading PDF...</div>}
@@ -1577,7 +1637,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </Document>
                 </div>
               ) : (
-                <div className="w-full p-6 flex flex-col items-center justify-center bg-gray-50 gap-4">
+                <div className="w-full p-6 flex flex-col items-center justify-center bg-gray-50 gap-4" style={{ height: hoveredFile.constrainedHeight }}>
                   {hoveredFile.isWord ? <FileText size={64} className="text-blue-500" /> :
                    hoveredFile.isExcel ? <FileSpreadsheet size={64} className="text-emerald-500" /> :
                    <File size={64} className="text-gray-400" />}
@@ -1614,7 +1674,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 className="relative max-w-5xl w-full max-h-full flex flex-col items-center justify-center"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="absolute -top-12 right-0 flex items-center gap-2">
+                <div className="absolute top-2 right-2 z-50 min-[height:801px]:-top-12 min-[height:801px]:right-0 flex items-center gap-2">
                   <button 
                     onClick={() => {
                       handleDownload(lightboxFile.file, lightboxFile.fileName);
