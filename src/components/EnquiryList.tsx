@@ -81,6 +81,9 @@ export default function EnquiryList({
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [showRevMenu, setShowRevMenu] = useState(false);
+  const [renderUpwardsFilter, setRenderUpwardsFilter] = useState(false);
+  const [renderUpwardsType, setRenderUpwardsType] = useState(false);
+  const [renderUpwardsRev, setRenderUpwardsRev] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const typeMenuRef = useRef<HTMLDivElement>(null);
@@ -491,14 +494,22 @@ export default function EnquiryList({
           {!isCompact && (
             <div className="relative" ref={typeMenuRef}>
               <button 
-                onClick={() => setShowTypeMenu(!showTypeMenu)}
+                onClick={() => {
+                  if (!showTypeMenu && typeMenuRef.current) {
+                    const rect = typeMenuRef.current.getBoundingClientRect();
+                    setRenderUpwardsType(window.innerHeight - rect.bottom < 200);
+                  }
+                  setShowTypeMenu(!showTypeMenu);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
               >
                 <span>{typeFilter ? `Type: ${typeFilter}` : 'Type: All'}</span>
                 <ChevronDown size={12} className={`transition-transform ${showTypeMenu ? 'rotate-180' : ''}`} />
               </button>
               {showTypeMenu && (
-                <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1">
+                <div className={`absolute right-0 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 ${
+                  renderUpwardsType ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
+                }`}>
                   <button
                     onClick={() => { setTypeFilter(''); setShowTypeMenu(false); }}
                     className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
@@ -524,7 +535,13 @@ export default function EnquiryList({
           {/* Quick Access: Revenue Role */}
           <div className="relative" ref={revMenuRef}>
             <button 
-              onClick={() => setShowRevMenu(!showRevMenu)}
+              onClick={() => {
+                if (!showRevMenu && revMenuRef.current) {
+                  const rect = revMenuRef.current.getBoundingClientRect();
+                  setRenderUpwardsRev(window.innerHeight - rect.bottom < 200);
+                }
+                setShowRevMenu(!showRevMenu);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
               title={isCompact ? (revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All') : ''}
             >
@@ -539,7 +556,9 @@ export default function EnquiryList({
               <ChevronDown size={12} className={`transition-transform ${showRevMenu ? 'rotate-180' : ''}`} />
             </button>
             {showRevMenu && (
-              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1">
+              <div className={`absolute right-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 ${
+                renderUpwardsRev ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
+              }`}>
                 <button
                   onClick={() => { setRevenueFilter([]); setShowRevMenu(false); }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.length === 0 ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
@@ -569,7 +588,13 @@ export default function EnquiryList({
           <div className="relative" ref={filterMenuRef}>
             <div className={`flex items-center rounded transition-colors ${activeFilters.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
               <button 
-                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                onClick={() => {
+                  if (!showFilterMenu && filterMenuRef.current) {
+                    const rect = filterMenuRef.current.getBoundingClientRect();
+                    setRenderUpwardsFilter(window.innerHeight - rect.bottom < 400); // Filter menu is taller
+                  }
+                  setShowFilterMenu(!showFilterMenu);
+                }}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-l text-xs font-bold hover:bg-black/5 transition-colors shrink-0`}
                 title={isCompact ? `Filter${activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}` : "More Filters"}
               >
@@ -593,7 +618,9 @@ export default function EnquiryList({
             </div>
 
             {showFilterMenu && (
-              <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+              <div className={`absolute right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden ${
+                renderUpwardsFilter ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
+              }`}>
                 {activeFilters.length > 0 && (
                   <div className="px-2 py-2 border-b border-gray-100 bg-gray-50/50">
                     <div className="px-1 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Active Filters</div>

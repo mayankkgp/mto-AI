@@ -291,6 +291,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [renderUpwards, setRenderUpwards] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,6 +311,15 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const handleToggle = () => {
+      if (!isOpen && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setRenderUpwards(spaceBelow < 200);
+      }
+      setIsOpen(!isOpen);
+    };
+
     const filteredUsers = users.filter(user => 
       user.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -317,7 +327,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     return (
       <div className="relative" ref={containerRef}>
         <div
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggle}
           className="cursor-pointer"
         >
           {children}
@@ -326,10 +336,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              initial={{ opacity: 0, scale: 0.95, y: renderUpwards ? 5 : -5 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -5 }}
-              className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded shadow-xl min-w-[160px] py-1 overflow-hidden flex flex-col"
+              exit={{ opacity: 0, scale: 0.95, y: renderUpwards ? 5 : -5 }}
+              className={`absolute left-0 z-50 bg-white border border-gray-200 rounded shadow-xl min-w-[160px] py-1 overflow-hidden flex flex-col ${
+                renderUpwards ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
+              }`}
             >
               <div className="px-2 py-1 border-b border-gray-50 mb-1">
                 <input
@@ -1175,7 +1187,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         setActionValidationErrors(prev => prev.filter(err => err !== 'text'));
                       }
                       e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
+                      e.target.style.height = (e.target.scrollHeight + 2) + 'px';
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1202,7 +1214,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         onChange={(e) => {
                           setNewAction({...newAction, remark: e.target.value});
                           e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
+                          e.target.style.height = (e.target.scrollHeight + 2) + 'px';
                         }}
                       />
                     </div>
@@ -1332,7 +1344,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         onChange={(e) => {
                           setNewAction({...newAction, remark: e.target.value});
                           e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
+                          e.target.style.height = (e.target.scrollHeight + 2) + 'px';
                         }}
                       />
                     </div>
@@ -1377,27 +1389,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         <div className="flex-1 min-w-0">
                           <div className="relative">
                             {/* Floated Due Date */}
-                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                              <input 
-                                type="date"
-                                autoFocus
-                                className="float-right bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
-                                value={item.dueDate}
-                                onChange={(e) => {
-                                  updateActionItem(item.id, 'revenue', 'dueDate', e.target.value);
-                                  e.target.blur();
-                                }}
-                                onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                              />
-                            ) : (
-                              <span 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                                className={`float-right text-[9px] font-bold shrink-0 ml-2 mb-1 ${item.isCompleted ? 'text-gray-400' : 'text-red-500 cursor-text hover:underline'}`}
-                              >
-                                {item.dueDate}
-                              </span>
-                            )}
+                            <input 
+                              type="date"
+                              className={`float-right ml-2 mb-1 bg-transparent border-none outline-none p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:hidden ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-red-500 hover:underline'}`}
+                              value={item.dueDate}
+                              disabled={item.isCompleted}
+                              onClick={(e) => {
+                                try {
+                                  if ('showPicker' in e.currentTarget) {
+                                    e.currentTarget.showPicker();
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                              onChange={(e) => {
+                                updateActionItem(item.id, 'revenue', 'dueDate', e.target.value);
+                              }}
+                            />
 
                             {/* Action Text */}
                             {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
@@ -1406,13 +1416,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                                 rows={1}
                                 className="w-full bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
+                                onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                                 onChange={(e) => {
                                   updateActionItem(item.id, 'revenue', 'action', e.target.value);
                                   e.target.style.height = 'auto';
                                   e.target.style.height = e.target.scrollHeight + 'px';
                                 }}
                                 onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && setEditingAction(null)}
                               />
                             ) : (
                               <p 
@@ -1435,13 +1446,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               placeholder="Add remark..."
                               className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none block"
                               value={item.remark}
+                              onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'revenue', 'remark', e.target.value);
                                 e.target.style.height = 'auto';
                                 e.target.style.height = e.target.scrollHeight + 'px';
                               }}
                               onBlur={() => setEditingAction(null)}
-                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && setEditingAction(null)}
                             />
                           ) : (
                             <p 
@@ -1477,27 +1489,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         <div className="flex-1 min-w-0">
                           <div className="relative">
                             {/* Floated Due Date */}
-                            {editingAction?.id === item.id && editingAction.field === 'dueDate' && !item.isCompleted ? (
-                              <input 
-                                type="date"
-                                autoFocus
-                                className="float-right bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[9px] font-bold outline-none ml-2 mb-1"
-                                value={item.dueDate}
-                                onChange={(e) => {
-                                  updateActionItem(item.id, 'supply', 'dueDate', e.target.value);
-                                  e.target.blur();
-                                }}
-                                onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
-                              />
-                            ) : (
-                              <span 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'dueDate' })}
-                                className={`float-right text-[9px] font-bold shrink-0 ml-2 mb-1 ${item.isCompleted ? 'text-gray-400' : 'text-blue-500 cursor-text hover:underline'}`}
-                              >
-                                {item.dueDate}
-                              </span>
-                            )}
+                            <input 
+                              type="date"
+                              className={`float-right ml-2 mb-1 bg-transparent border-none outline-none p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:hidden ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-blue-500 hover:underline'}`}
+                              value={item.dueDate}
+                              disabled={item.isCompleted}
+                              onClick={(e) => {
+                                try {
+                                  if ('showPicker' in e.currentTarget) {
+                                    e.currentTarget.showPicker();
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                              onChange={(e) => {
+                                updateActionItem(item.id, 'supply', 'dueDate', e.target.value);
+                              }}
+                            />
 
                             {/* Action Text */}
                             {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
@@ -1506,13 +1516,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                                 rows={1}
                                 className="w-full bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
+                                onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                                 onChange={(e) => {
                                   updateActionItem(item.id, 'supply', 'action', e.target.value);
                                   e.target.style.height = 'auto';
                                   e.target.style.height = e.target.scrollHeight + 'px';
                                 }}
                                 onBlur={() => setEditingAction(null)}
-                                onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && setEditingAction(null)}
                               />
                             ) : (
                               <p 
@@ -1535,13 +1546,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               placeholder="Add remark..."
                               className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none resize-none block"
                               value={item.remark}
+                              onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'supply', 'remark', e.target.value);
                                 e.target.style.height = 'auto';
                                 e.target.style.height = e.target.scrollHeight + 'px';
                               }}
                               onBlur={() => setEditingAction(null)}
-                              onKeyDown={(e) => e.key === 'Enter' && setEditingAction(null)}
+                              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && setEditingAction(null)}
                             />
                           ) : (
                             <p 
