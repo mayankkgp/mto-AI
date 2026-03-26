@@ -21,7 +21,8 @@ import { formatIndianCurrency, formatDate } from '../utils/formatters';
 import { MOCK_USERS } from '../mockData';
 
 const getInitials = (name: string) => {
-  const parts = name.split(' ');
+  if (!name) return '??';
+  const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   }

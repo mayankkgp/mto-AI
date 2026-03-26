@@ -269,10 +269,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   // Helper for initials
   const getInitials = (name: string) => {
+    if (!name) return '??';
     const parts = name.trim().split(/\s+/);
-    if (parts.length === 0) return '??';
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   // Custom User Selector Component
@@ -437,7 +439,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   const updateTextareaHeight = (ref: React.RefObject<HTMLTextAreaElement | null>) => {
     if (ref.current && ref.current.clientWidth > 0) {
       ref.current.style.height = 'auto';
-      ref.current.style.height = Math.min(ref.current.scrollHeight, 80) + 'px';
+      const scrollHeight = ref.current.scrollHeight;
+      ref.current.style.height = Math.min(scrollHeight + 2, 80) + 'px';
+      ref.current.style.overflowY = scrollHeight > 80 ? 'auto' : 'hidden';
     }
   };
 
@@ -736,7 +740,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             {(formData.revenueRoles?.length > 0 || formData.supplyRoles?.length > 0) && (
               <div className="hidden sm:flex items-center gap-2 border-l border-gray-300 pl-3 shrink-0">
                 {formData.revenueRoles?.length > 0 && (
-                  <div className="flex -space-x-1.5" title="Revenue Roles">
+                  <div className="flex gap-1" title="Revenue Roles">
                     {formData.revenueRoles.map(uid => {
                       const user = MOCK_USERS.find(u => u.id === uid);
                       return user ? (
@@ -752,7 +756,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </div>
                 )}
                 {formData.supplyRoles?.length > 0 && (
-                  <div className="flex -space-x-1.5" title="Supply Roles">
+                  <div className="flex gap-1" title="Supply Roles">
                     {formData.supplyRoles.map(uid => {
                       const user = MOCK_USERS.find(u => u.id === uid);
                       return user ? (
@@ -916,7 +920,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={overviewRef}
                   rows={1}
-                  className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto`}
+                  className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px]`}
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
@@ -929,7 +933,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={detailsRef}
                   rows={1}
-                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px] overflow-y-auto"
+                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:ring-1 focus:ring-emerald-500 resize-none max-h-[80px]"
                   value={formData.leadDetails}
                   onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                   placeholder="Detailed requirements, specifications, etc..."
@@ -1157,7 +1161,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     ref={actionTextRef}
                     rows={1}
                     placeholder="What needs to be done?"
-                    className={`w-full bg-gray-50 border rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors ${
+                    className={`w-full bg-gray-50 border rounded px-2 py-1.5 text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
                       actionValidationErrors.includes('text') 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-200'
@@ -1191,7 +1195,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       <textarea 
                         rows={1}
                         placeholder="Additional notes..."
-                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] ${
+                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] max-h-[80px] overflow-y-auto ${
                           newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
                         }`}
                         value={newAction.remark}
@@ -1321,7 +1325,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       <textarea 
                         rows={1}
                         placeholder="Additional notes..."
-                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] ${
+                        className={`w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-[10px] outline-none italic resize-none transition-colors h-[28px] min-h-[28px] max-h-[80px] overflow-y-auto ${
                           newAction.type === 'revenue' ? 'focus:border-red-400' : 'focus:border-blue-400'
                         }`}
                         value={newAction.remark}
@@ -1367,7 +1371,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
                     .map(item => (
                       <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}>
-                        <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="mt-0.5 shrink-0">
+                        <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
                         <div className="flex-1 min-w-0">
@@ -1467,7 +1471,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
                     .map(item => (
                       <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}>
-                        <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="mt-0.5 shrink-0">
+                        <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
                         <div className="flex-1 min-w-0">
