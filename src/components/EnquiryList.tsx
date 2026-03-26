@@ -88,6 +88,7 @@ export default function EnquiryList({
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const typeMenuRef = useRef<HTMLDivElement>(null);
   const revMenuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Close menu on outside click
   useEffect(() => {
@@ -421,12 +422,13 @@ export default function EnquiryList({
 
   const SortHeader = ({ label, sortKey, className = "" }: { label: string, sortKey: string, className?: string }) => {
     const isActive = sortConfig?.key === sortKey;
+    const isRightAligned = className.includes('text-right');
     return (
       <th 
         className={`px-4 py-1 border-r border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors group ${className}`}
         onClick={() => handleSort(sortKey)}
       >
-        <div className="flex items-center gap-1">
+        <div className={`flex items-center gap-1 ${isRightAligned ? 'justify-end' : ''}`}>
           <span>{label}</span>
           <div className={`transition-all ${isActive ? 'opacity-100 text-emerald-600' : 'opacity-0 group-hover:opacity-50'}`}>
             {isActive ? (
@@ -479,12 +481,25 @@ export default function EnquiryList({
         <div className="relative flex-1 min-w-[120px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input 
+            ref={searchInputRef}
             type="text"
             placeholder={isCompact ? "Search..." : "Search Enquiry ID, Customer, Overview..."}
-            className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            className="w-full pl-9 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery.length > 0 && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                searchInputRef.current?.focus();
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-200/50"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -676,7 +691,7 @@ export default function EnquiryList({
               <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[120px]">Supply</th>
               <SortHeader label="Rev Action" sortKey="revAction" className="min-w-[120px]" />
               <SortHeader label="Sup Action" sortKey="supAction" className="min-w-[120px]" />
-              <SortHeader label="Exp Value" sortKey="expectedValue" className="min-w-[110px]" />
+              <SortHeader label="Exp Value" sortKey="expectedValue" className="min-w-[110px] text-right" />
               <SortHeader label="Created" sortKey="createdOn" className="min-w-[100px]" />
             </tr>
           </thead>
@@ -758,7 +773,7 @@ export default function EnquiryList({
                     return <span className={urgency.color}>{urgency.text}</span>;
                   })()}
                 </td>
-                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-bold whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-bold whitespace-nowrap text-right">
                   {formatIndianCurrency(enq.expectedValue)}
                 </td>
                 <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 text-[10px] text-gray-400 whitespace-nowrap">

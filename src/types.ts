@@ -19,6 +19,7 @@ export interface ActionItem {
   dueDate: string;
   remark: string;
   isCompleted: boolean;
+  completedAt?: number;
   type: 'revenue' | 'supply';
 }
 

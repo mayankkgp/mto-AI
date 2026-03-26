@@ -73,6 +73,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   const [showAutoSaveError, setShowAutoSaveError] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isSavingUI, setIsSavingUI] = useState(false);
   const isSavingRef = useRef(false);
 
   const [formData, setFormData] = useState<Partial<Enquiry>>(
@@ -175,6 +176,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
       setPendingAction({ type: 'close' });
       isSavingRef.current = true;
+      setIsSavingUI(true);
       try {
         await onSave(formData as Enquiry);
         onClose();
@@ -182,6 +184,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         setShowAutoSaveError(true);
       } finally {
         isSavingRef.current = false;
+        setIsSavingUI(false);
       }
     } else {
       onClose();
@@ -196,6 +199,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     }
 
     isSavingRef.current = true;
+    setIsSavingUI(true);
     try {
       await onSave(formData as Enquiry);
       setInternalEnquiry(formData as Enquiry);
@@ -204,12 +208,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       setShowAutoSaveError(true);
     } finally {
       isSavingRef.current = false;
+      setIsSavingUI(false);
     }
   };
 
   const handleRetrySave = async () => {
     setShowAutoSaveError(false);
     isSavingRef.current = true;
+    setIsSavingUI(true);
     try {
       await onSave(formData as Enquiry);
       if (pendingAction?.type === 'close') {
@@ -223,6 +229,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       setShowAutoSaveError(true);
     } finally {
       isSavingRef.current = false;
+      setIsSavingUI(false);
     }
   };
 
@@ -717,7 +724,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     const listKey = type === 'revenue' ? 'revenueActions' : 'supplyActions';
     setFormData(prev => ({
       ...prev,
-      [listKey]: prev[listKey]?.map(a => a.id === id ? { ...a, isCompleted: !a.isCompleted } : a)
+      [listKey]: prev[listKey]?.map(a => 
+        a.id === id 
+          ? { ...a, isCompleted: !a.isCompleted, completedAt: !a.isCompleted ? Date.now() : undefined } 
+          : a
+      )
     }));
   };
 
@@ -797,9 +808,15 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             <div className="w-px h-6 bg-gray-200 mx-1" />
             <button 
               onClick={handleManualSave}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+              disabled={isSavingUI}
+              className={`px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors ${isSavingUI ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              <Save size={14} /> SAVE
+              {isSavingUI ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+              ) : (
+                <Save size={14} />
+              )}
+              SAVE
             </button>
             <button 
               onClick={handleCloseRequest}
@@ -836,7 +853,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="relative">
                   <input 
                     list="customers"
-                    className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none`}
+                    className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                   />
@@ -860,25 +877,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       {enquiry ? (
                         <>
                           <div className="space-y-0 col-span-2">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">POC *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">City *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Contact *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -887,25 +904,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       ) : (
                         <>
                           <div className="space-y-0">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">City *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">POC *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Contact *</label>
                             <input 
-                              className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
+                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -946,14 +963,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Type, Lead Date, Channel */}
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                  <div className={`flex bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded p-0.5`}>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
+                  <div className={`flex bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded h-[26px] p-[2px]`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setFormData({...formData, type: t})}
-                        className={`flex-1 py-1 px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
+                        className={`flex-1 h-full flex items-center justify-center px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
                           formData.type === t 
                           ? 'bg-emerald-600 text-white shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-50'
@@ -965,10 +982,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </div>
                 </div>
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Date</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Lead Date</label>
                   <input 
                     type="date"
-                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
+                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
                     value={formData.leadDate}
                     onChange={(e) => {
                       setFormData({...formData, leadDate: e.target.value});
@@ -977,9 +994,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   />
                 </div>
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Channel</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Channel</label>
                   <select 
-                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                   >
@@ -1054,18 +1071,41 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Commercials */}
               <div className="grid grid-cols-3 gap-1.5 mt-1">
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Order Value (₹)</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Order Value (₹)</label>
                   <input 
                     type="text"
-                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500"
+                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500 text-right"
                     value={formatInputCurrency(formData.orderValue)}
-                    onChange={(e) => setFormData({...formData, orderValue: parseInputCurrency(e.target.value)})}
+                    onChange={(e) => {
+                      const input = e.target;
+                      const selectionStart = input.selectionStart || 0;
+                      const oldValue = input.value;
+                      const newValue = parseInputCurrency(oldValue);
+                      
+                      setFormData({...formData, orderValue: newValue});
+                      
+                      requestAnimationFrame(() => {
+                        const formattedValue = formatInputCurrency(newValue || 0);
+                        const targetDigits = oldValue.substring(0, selectionStart).replace(/\D/g, '').length;
+                        
+                        let newPos = 0;
+                        let digitsFound = 0;
+                        for (let i = 0; i < formattedValue.length && digitsFound < targetDigits; i++) {
+                          if (/\d/.test(formattedValue[i])) {
+                            digitsFound++;
+                          }
+                          newPos = i + 1;
+                        }
+                        
+                        input.setSelectionRange(newPos, newPos);
+                      });
+                    }}
                   />
                 </div>
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Prob (%)</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Prob (%)</label>
                   <select 
-                    className="w-full px-1 py-1 tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
+                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                   >
@@ -1074,8 +1114,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </select>
                 </div>
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Expected Value</label>
-                  <div className="w-full px-1 py-1 tracking-tight bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold">
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Expected Value</label>
+                  <div className="w-full px-1 h-[26px] flex items-center justify-end tracking-tight bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold text-right">
                     {formatIndianCurrency(formData.expectedValue || 0)}
                   </div>
                 </div>
@@ -1084,7 +1124,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Roles */}
               <div className="grid grid-cols-2 gap-1.5 mt-1">
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Revenue Role *</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Revenue Role *</label>
                   <UserSelector 
                     users={MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin')}
                     selectedUsers={formData.revenueRoles || []}
@@ -1097,7 +1137,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       }
                     }}
                   >
-                    <div className={`flex flex-wrap items-center gap-1 p-1 bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[28px] hover:border-emerald-400 transition-colors`}>
+                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] hover:border-emerald-400 transition-colors`}>
                       {formData.revenueRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
@@ -1117,7 +1157,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </UserSelector>
                 </div>
                 <div className="space-y-0">
-                  <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Supply Role</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Supply Role</label>
                   <UserSelector 
                     users={MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin')}
                     selectedUsers={formData.supplyRoles || []}
@@ -1130,7 +1170,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       }
                     }}
                   >
-                    <div className="flex flex-wrap items-center gap-1 p-1 bg-white border border-gray-200 rounded min-h-[28px] hover:border-blue-400 transition-colors">
+                    <div className="flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] hover:border-blue-400 transition-colors">
                       {formData.supplyRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
@@ -1373,9 +1413,19 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 </div>
                 <div className="flex-1 overflow-y-auto p-1 min-[height:801px]:p-2 space-y-1 min-[height:801px]:space-y-1.5 no-scrollbar">
                   {[...(formData.revenueActions || [])]
-                    .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
+                    .sort((a, b) => {
+                      if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+                      if (a.isCompleted && b.isCompleted) return (b.completedAt || 0) - (a.completedAt || 0);
+                      return 0;
+                    })
                     .map(item => (
-                      <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}>
+                      <motion.div 
+                        layout 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }}
+                        key={item.id} 
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-red-200'}`}
+                      >
                         <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
@@ -1398,7 +1448,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-full bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                className="w-full mt-1 bg-gray-50 border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
                                 onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                                 onChange={(e) => {
@@ -1412,7 +1462,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
                               >
                                 {item.action}
                               </p>
@@ -1448,7 +1498,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             </p>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                 </div>
               </div>
@@ -1464,9 +1514,19 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 </div>
                 <div className="flex-1 overflow-y-auto p-1 min-[height:801px]:p-2 space-y-1 min-[height:801px]:space-y-1.5 no-scrollbar">
                   {[...(formData.supplyActions || [])]
-                    .sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1))
+                    .sort((a, b) => {
+                      if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+                      if (a.isCompleted && b.isCompleted) return (b.completedAt || 0) - (a.completedAt || 0);
+                      return 0;
+                    })
                     .map(item => (
-                      <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}>
+                      <motion.div 
+                        layout 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }}
+                        key={item.id} 
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-blue-200'}`}
+                      >
                         <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
                         </button>
@@ -1489,7 +1549,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-full bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
+                                className="w-full mt-1 bg-gray-50 border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none resize-none"
                                 value={item.action}
                                 onFocus={(e) => e.target.setSelectionRange(e.target.value.length, e.target.value.length)}
                                 onChange={(e) => {
@@ -1503,7 +1563,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
                               >
                                 {item.action}
                               </p>
@@ -1539,7 +1599,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             </p>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                 </div>
               </div>
