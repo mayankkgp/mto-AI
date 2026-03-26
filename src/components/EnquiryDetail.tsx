@@ -625,15 +625,6 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         const dateInput = actionDateRef.current;
         if (dateInput) {
           dateInput.focus();
-          // Modern browsers require showPicker() to be called in the same synchronous 
-          // execution thread as the user gesture.
-          if ('showPicker' in dateInput) {
-            try {
-              (dateInput as any).showPicker();
-            } catch (e) {
-              console.warn('Failed to open date picker programmatically:', e);
-            }
-          }
         }
       }
 
@@ -1001,7 +992,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               </div>
 
               {/* Micro-Dropzone: Files & Attachments */}
-              <div className="space-y-1 mt-1">
+              <div 
+                className="space-y-1 mt-1 p-2 -mx-2 rounded-lg transition-colors hover:bg-gray-50/50"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+              >
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -1049,8 +1044,6 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 {/* Compact CTA */}
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
                   className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer bg-gray-50/50"
                 >
                   <Paperclip size={12} className="text-gray-500" />
@@ -1391,18 +1384,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`float-right ml-2 mb-1 bg-transparent border-none outline-none p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:hidden ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-red-500 hover:underline'}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-red-500 hover:underline'}`}
                               value={item.dueDate}
                               disabled={item.isCompleted}
-                              onClick={(e) => {
-                                try {
-                                  if ('showPicker' in e.currentTarget) {
-                                    e.currentTarget.showPicker();
-                                  }
-                                } catch (err) {
-                                  console.error(err);
-                                }
-                              }}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'revenue', 'dueDate', e.target.value);
@@ -1491,18 +1475,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`float-right ml-2 mb-1 bg-transparent border-none outline-none p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:hidden ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-blue-500 hover:underline'}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-blue-500 hover:underline'}`}
                               value={item.dueDate}
                               disabled={item.isCompleted}
-                              onClick={(e) => {
-                                try {
-                                  if ('showPicker' in e.currentTarget) {
-                                    e.currentTarget.showPicker();
-                                  }
-                                } catch (err) {
-                                  console.error(err);
-                                }
-                              }}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'supply', 'dueDate', e.target.value);

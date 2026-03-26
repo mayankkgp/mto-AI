@@ -475,8 +475,8 @@ export default function EnquiryList({
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-9 min-[height:801px]:h-11">
-        <div className={`relative ${isCompact ? 'w-48' : 'w-64'} shrink-0`}>
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-9 min-[height:801px]:h-11 overflow-x-auto no-scrollbar">
+        <div className="relative flex-1 min-w-[120px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input 
             type="text"
@@ -486,8 +486,6 @@ export default function EnquiryList({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-
-        <div className="flex-1" />
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Quick Access: Lead Type */}
@@ -502,8 +500,10 @@ export default function EnquiryList({
                   setShowTypeMenu(!showTypeMenu);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                title={typeFilter ? `Type: ${typeFilter}` : 'Type: All'}
               >
-                <span>{typeFilter ? `Type: ${typeFilter}` : 'Type: All'}</span>
+                <Tag size={14} className="md:hidden" />
+                <span className="hidden md:inline">{typeFilter ? `Type: ${typeFilter}` : 'Type: All'}</span>
                 <ChevronDown size={12} className={`transition-transform ${showTypeMenu ? 'rotate-180' : ''}`} />
               </button>
               {showTypeMenu && (
@@ -543,16 +543,13 @@ export default function EnquiryList({
                 setShowRevMenu(!showRevMenu);
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-              title={isCompact ? (revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All') : ''}
+              title={revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All'}
             >
-              {isCompact ? (
-                <div className="flex items-center gap-1">
-                  <UserIcon size={14} />
-                  {revenueFilter.length > 0 && <span className="text-[10px]">{revenueFilter.length}</span>}
-                </div>
-              ) : (
-                <span>{revenueFilter.length > 0 ? `Rev: ${revenueFilter.length}` : 'Rev Role: All'}</span>
-              )}
+              <div className={`flex items-center gap-1 ${isCompact ? "" : "md:hidden"}`}>
+                <UserIcon size={14} />
+                {revenueFilter.length > 0 && <span className="text-[10px]">{revenueFilter.length}</span>}
+              </div>
+              <span className={isCompact ? "hidden" : "hidden md:inline"}>{revenueFilter.length > 0 ? `Rev: ${revenueFilter.length}` : 'Rev Role: All'}</span>
               <ChevronDown size={12} className={`transition-transform ${showRevMenu ? 'rotate-180' : ''}`} />
             </button>
             {showRevMenu && (
@@ -596,12 +593,12 @@ export default function EnquiryList({
                   setShowFilterMenu(!showFilterMenu);
                 }}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-l text-xs font-bold hover:bg-black/5 transition-colors shrink-0`}
-                title={isCompact ? `Filter${activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}` : "More Filters"}
+                title={`Filter${activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}`}
               >
                 <Filter size={14} />
-                {!isCompact && <span>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>}
-                {isCompact && activeFilters.length > 0 && (
-                  <span className="flex items-center justify-center bg-emerald-600 text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none">
+                <span className={isCompact ? "hidden" : "hidden md:inline"}>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>
+                {activeFilters.length > 0 && (
+                  <span className={`flex items-center justify-center bg-emerald-600 text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none ${isCompact ? "" : "md:hidden"}`}>
                     {activeFilters.length}
                   </span>
                 )}
