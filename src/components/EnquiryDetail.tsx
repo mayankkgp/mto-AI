@@ -69,12 +69,19 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   });
 
   const [internalEnquiry, setInternalEnquiry] = useState<Enquiry | null>(enquiry);
+  const [displayEnquiry, setDisplayEnquiry] = useState<Enquiry | null>(enquiry);
   const [pendingAction, setPendingAction] = useState<{ type: 'close' } | { type: 'switch', enquiry: Enquiry | null } | null>(null);
   const [showAutoSaveError, setShowAutoSaveError] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isSavingUI, setIsSavingUI] = useState(false);
   const isSavingRef = useRef(false);
+  const hasWarnedRef = useRef(false);
+
+  useEffect(() => {
+    // Reset warning if enquiry changes
+    hasWarnedRef.current = false;
+  }, [enquiry]);
 
   const [formData, setFormData] = useState<Partial<Enquiry>>(
     enquiry || getDefaultFormData(nextEnquiryId)
@@ -140,7 +147,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   };
 
   useEffect(() => {
-    if (enquiry?.id !== internalEnquiry?.id && !isSavingRef.current && !showAutoSaveError && !showValidationModal) {
+    if (enquiry?.id !== internalEnquiry?.id && !isSavingRef.current && !showAutoSaveError && !showValidationModal && !hasWarnedRef.current) {
       if (isDirty) {
         const action = { type: 'switch' as const, enquiry };
         
@@ -148,6 +155,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         if (errors.length > 0) {
           setPendingAction(action);
           setShowValidationModal(true);
+          hasWarnedRef.current = true;
           return;
         }
 
@@ -173,6 +181,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         doSave();
       } else {
         setInternalEnquiry(enquiry);
+        setDisplayEnquiry(enquiry);
         setFormData(enquiry || getDefaultFormData(nextEnquiryId));
         setValidationErrors([]);
         setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
@@ -220,7 +229,21 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     try {
       await onSave(formData as Enquiry);
       setInternalEnquiry(formData as Enquiry);
+      setDisplayEnquiry(formData as Enquiry);
       setValidationErrors([]);
+
+      // Resume intent if any
+      if (pendingAction?.type === 'close') {
+        onClose();
+      } else if (pendingAction?.type === 'switch') {
+        setInternalEnquiry(pendingAction.enquiry);
+        setDisplayEnquiry(pendingAction.enquiry);
+        setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
+        setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+        setActionValidationErrors([]);
+        setEditingAction(null);
+      }
+      setPendingAction(null);
     } catch (error) {
       setShowAutoSaveError(true);
     } finally {
@@ -235,10 +258,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     setIsSavingUI(true);
     try {
       await onSave(formData as Enquiry);
+      setDisplayEnquiry(formData as Enquiry);
       if (pendingAction?.type === 'close') {
         onClose();
       } else if (pendingAction?.type === 'switch') {
         setInternalEnquiry(pendingAction.enquiry);
+        setDisplayEnquiry(pendingAction.enquiry);
         setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
         setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
         setActionValidationErrors([]);
@@ -261,6 +286,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       onClose();
     } else if (pendingAction?.type === 'switch') {
       setInternalEnquiry(pendingAction.enquiry);
+      setDisplayEnquiry(pendingAction.enquiry);
       setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
       setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
       setActionValidationErrors([]);
@@ -273,7 +299,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   const [dropReason, setDropReason] = useState('');
   const [actionValidationErrors, setActionValidationErrors] = useState<string[]>([]);
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
-  const [isCustomerExpanded, setIsCustomerExpanded] = useState(!enquiry);
+  const [isCustomerExpanded, setIsCustomerExpanded] = useState(!displayEnquiry);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Reset validation errors on interaction
@@ -505,7 +531,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   useEffect(() => {
     updateTextareaHeight(overviewRef);
     updateTextareaHeight(detailsRef);
-  }, [formData.leadOverview, formData.leadDetails, enquiry]);
+  }, [formData.leadOverview, formData.leadDetails, displayEnquiry]);
 
   // Clipboard Paste Support
   useEffect(() => {
@@ -762,7 +788,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       <div className="px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0 h-[44px] min-[height:801px]:h-[52px]">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-bold text-gray-800 uppercase tracking-tight">
-            {enquiry ? enquiry.id : `Create New Enquiry: ${formData.id}`}
+            {displayEnquiry ? displayEnquiry.id : `Create New Enquiry: ${formData.id}`}
           </h2>
           {formData.status && (
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -854,7 +880,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         {/* Content */}
         <div 
           className="flex-1 overflow-hidden grid no-scrollbar transition-[grid-template-columns] duration-500 ease-in-out"
-          style={{ gridTemplateColumns: !enquiry ? '70% 30%' : '35% 65%' }}
+          style={{ gridTemplateColumns: !displayEnquiry ? '70% 30%' : '35% 65%' }}
         >
           {/* Left: Overview (Scrollable) */}
           <div className="@container overflow-y-auto p-1.5 min-[height:801px]:p-3 no-scrollbar bg-white">
@@ -864,7 +890,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="space-y-0">
                 <div className="flex items-center gap-1 mb-0.5 h-[18px]">
                   <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Customer *</label>
-                  {enquiry && (
+                  {displayEnquiry && (
                     <button 
                       onClick={() => setIsCustomerExpanded(!isCustomerExpanded)}
                       className="p-0.5 hover:bg-gray-100 rounded transition-colors"
@@ -889,7 +915,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
               {/* Collapsible Customer Details */}
               <AnimatePresence initial={false}>
-                {(!enquiry || isCustomerExpanded) && (
+                {(!displayEnquiry || isCustomerExpanded) && (
                   <motion.div 
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
@@ -897,8 +923,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                     className="overflow-hidden"
                   >
-                    <div className={`grid gap-1.5 ${!enquiry ? 'grid-cols-2 @[500px]:grid-cols-3' : 'grid-cols-1 @[500px]:grid-cols-2'}`}>
-                      {enquiry ? (
+                    <div className={`grid gap-1.5 ${!displayEnquiry ? 'grid-cols-2 @[500px]:grid-cols-3' : 'grid-cols-1 @[500px]:grid-cols-2'}`}>
+                      {displayEnquiry ? (
                         <>
                           <div className="space-y-0 col-span-2">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
@@ -1256,7 +1282,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 </div>
 
                 {/* Secondary Controls - Responsive Layout */}
-                {!enquiry ? (
+                {!displayEnquiry ? (
                   <>
                     {/* Remark Section */}
                     <div>
@@ -1421,9 +1447,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             </div>
 
             {/* Side-by-Side Lists */}
-            <div className={`flex-1 grid ${!enquiry ? 'grid-cols-1' : 'grid-cols-2'} overflow-hidden transition-all duration-500`}>
+            <div className={`flex-1 grid ${!displayEnquiry ? 'grid-cols-1' : 'grid-cols-2'} overflow-hidden transition-all duration-500`}>
               {/* Revenue Column */}
-              <div className={`flex flex-col ${enquiry ? 'border-r' : 'border-b'} border-gray-200 overflow-hidden`}>
+              <div className={`flex flex-col ${displayEnquiry ? 'border-r' : 'border-b'} border-gray-200 overflow-hidden`}>
                 <div className="px-3 py-1.5 bg-red-50/50 border-b border-red-100 flex items-center gap-2 shrink-0">
                   <CheckCircle2 size={12} className="text-red-500" />
                   <h3 className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Revenue Actions</h3>
