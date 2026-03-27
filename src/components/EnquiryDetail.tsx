@@ -80,6 +80,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     enquiry || getDefaultFormData(nextEnquiryId)
   );
 
+  const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
+
   const defaultFormData = React.useMemo(() => ({
     id: nextEnquiryId,
     customerName: '',
@@ -102,11 +104,16 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   }), [nextEnquiryId]);
 
   const isDirty = React.useMemo(() => {
+    // 1. Check for unsubmitted tasks first
+    const hasPendingTask = Boolean(newAction.text.trim() || newAction.remark.trim());
+    if (hasPendingTask) return true;
+
+    // 2. Check standard form data
     if (!internalEnquiry) {
       return JSON.stringify(formData) !== JSON.stringify(defaultFormData);
     }
     return JSON.stringify(formData) !== JSON.stringify(internalEnquiry);
-  }, [formData, internalEnquiry, defaultFormData]);
+  }, [formData, internalEnquiry, defaultFormData, newAction.text, newAction.remark]);
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -117,6 +124,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     if (!formData.leadOverview?.trim()) errors.push('leadOverview');
     if (!formData.type) errors.push('type');
     if (!formData.revenueRoles || formData.revenueRoles.length === 0) errors.push('revenueRoles');
+    if (newAction.text.trim() || newAction.remark.trim()) {
+      errors.push('pendingTask');
+      setActionValidationErrors(prev => [...prev, 'text']);
+    }
     
     setValidationErrors(errors);
 
@@ -148,6 +159,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             await onSave(formData as Enquiry);
             setInternalEnquiry(enquiry);
             setFormData(enquiry || getDefaultFormData(nextEnquiryId));
+            setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+            setActionValidationErrors([]);
+            setEditingAction(null);
             setPendingAction(null);
             setValidationErrors([]);
           } catch (error) {
@@ -161,6 +175,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         setInternalEnquiry(enquiry);
         setFormData(enquiry || getDefaultFormData(nextEnquiryId));
         setValidationErrors([]);
+        setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+        setActionValidationErrors([]);
+        setEditingAction(null);
       }
     }
   }, [enquiry, internalEnquiry, isDirty, showAutoSaveError, showValidationModal, nextEnquiryId, onSave, formData]);
@@ -223,6 +240,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
       } else if (pendingAction?.type === 'switch') {
         setInternalEnquiry(pendingAction.enquiry);
         setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
+        setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+        setActionValidationErrors([]);
+        setEditingAction(null);
       }
       setPendingAction(null);
     } catch (error) {
@@ -242,13 +262,15 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     } else if (pendingAction?.type === 'switch') {
       setInternalEnquiry(pendingAction.enquiry);
       setFormData(pendingAction.enquiry || getDefaultFormData(nextEnquiryId));
+      setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+      setActionValidationErrors([]);
+      setEditingAction(null);
     }
     setPendingAction(null);
   };
 
   const [showDropModal, setShowDropModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
-  const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
   const [actionValidationErrors, setActionValidationErrors] = useState<string[]>([]);
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(!enquiry);
@@ -1200,7 +1222,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           <div className="flex flex-col bg-gray-50/50 overflow-hidden border-l border-gray-100">
             {/* Unified Task Creation */}
             <div className="p-1.5 min-[height:801px]:p-3 border-b border-gray-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-1 min-[height:801px]:gap-2">
+              <div className="flex flex-col gap-2 min-[height:801px]:gap-3">
                 {/* Primary Action Section */}
                 <div>
                   <div className="flex items-center mb-0.5 h-[18px]">
@@ -1210,7 +1232,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     ref={actionTextRef}
                     rows={1}
                     placeholder="What needs to be done?"
-                    className={`w-full bg-white border rounded px-2 py-1 h-[26px] min-h-[26px] text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
+                    className={`block w-full bg-white border rounded px-1 py-1 h-[26px] min-h-[26px] text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
                       actionValidationErrors.includes('text') 
                         ? 'border-red-500 bg-red-50' 
                         : 'border-gray-200'
@@ -1238,11 +1260,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <>
                     {/* Remark Section */}
                     <div>
-                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Remark</label>
+                      <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
                       <textarea 
                         rows={1}
                         placeholder="Additional notes..."
-                        className={`w-full bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                        className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
                         value={newAction.remark}
                         onChange={(e) => {
                           setNewAction({...newAction, remark: e.target.value});
@@ -1256,7 +1278,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       <div className="grid grid-cols-[auto_1fr_auto] gap-1.5 items-start">
                         {/* Type Pill Toggle */}
                         <div>
-                          <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
+                          <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
                           <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
                             <button 
                               onClick={() => setNewAction({...newAction, type: 'revenue'})}
@@ -1279,11 +1301,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
                         {/* Due Date */}
                         <div>
-                          <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Due Date *</label>
+                          <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Due Date *</label>
                           <input 
                             ref={actionDateRef}
                             type="date"
-                            className={`w-full bg-white border rounded px-2 py-1 text-[11px] outline-none transition-colors h-[26px] ${
+                            className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
                               actionValidationErrors.includes('date')
                                 ? 'border-red-500 bg-red-50'
                                 : 'border-gray-200'
@@ -1320,7 +1342,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-1.5 items-start`}>
                       {/* Type Pill Toggle */}
                       <div>
-                        <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
+                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
                         <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
                           <button 
                             onClick={() => setNewAction({...newAction, type: 'revenue'})}
@@ -1343,11 +1365,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
                       {/* Due Date */}
                       <div>
-                        <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Due Date *</label>
+                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Due Date *</label>
                         <input 
                           ref={actionDateRef}
                           type="date"
-                          className={`w-full bg-white border rounded px-2 py-1 text-[11px] outline-none transition-colors h-[26px] ${
+                          className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
                             actionValidationErrors.includes('date')
                               ? 'border-red-500 bg-red-50'
                               : 'border-gray-200'
@@ -1365,11 +1387,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
                       {/* Remark - Maximized in Wide View */}
                       <div>
-                        <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Remark</label>
+                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
                         <textarea 
                           rows={1}
                           placeholder="Additional notes..."
-                          className={`w-full bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
                           value={newAction.remark}
                           onChange={(e) => {
                             setNewAction({...newAction, remark: e.target.value});
@@ -1925,29 +1947,38 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <AlertCircle size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Required Fields</h3>
+                {validationErrors.includes('pendingTask') && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs text-left">
+                    <p className="font-bold mb-1">⚠️ Unsubmitted Task</p>
+                    <p>You have a task currently being written in the right pane. Please submit it (using the arrow button) or clear the text before continuing.</p>
+                  </div>
+                )}
                 <div className="text-sm text-gray-500 mb-6">
                   <p className="mb-3">Please fill in all mandatory fields before saving or navigating:</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {validationErrors.map(err => (
-                      <span key={err} className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded border border-red-100 uppercase tracking-tight">
+                      <span key={err} className={`px-2 py-1 text-[10px] font-bold rounded border uppercase tracking-tight ${err === 'pendingTask' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                         {err === 'revenueRoles' ? 'Revenue Role' : 
                          err === 'customerName' ? 'Customer Name' :
                          err === 'leadOverview' ? 'Lead Overview' :
+                         err === 'pendingTask' ? 'Unsubmitted Task' :
                          err.charAt(0).toUpperCase() + err.slice(1)}
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={handleDiscardChanges}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors"
-                  >
-                    Discard Changes
-                  </button>
+                  {pendingAction && (
+                    <button
+                      onClick={handleDiscardChanges}
+                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors"
+                    >
+                      Discard Changes
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowValidationModal(false)}
-                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors"
+                    className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors ${pendingAction ? 'flex-1' : 'w-full'}`}
                   >
                     Fix Errors
                   </button>
