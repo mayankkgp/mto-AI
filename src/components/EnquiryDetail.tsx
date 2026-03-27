@@ -835,8 +835,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           style={{ gridTemplateColumns: !enquiry ? '70% 30%' : '35% 65%' }}
         >
           {/* Left: Overview (Scrollable) */}
-          <div className="@container overflow-y-auto p-1.5 min-[height:801px]:p-3 border-r border-gray-100 no-scrollbar bg-white">
-            <div className="flex flex-col gap-1 min-[height:801px]:gap-2">
+          <div className="@container overflow-y-auto p-1.5 min-[height:801px]:p-3 no-scrollbar bg-white">
+            <div className="flex flex-col gap-2 min-[height:801px]:gap-3">
               
               {/* Customer Name + Toggle */}
               <div className="space-y-0">
@@ -855,7 +855,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="relative">
                   <input 
                     list="customers"
-                    className={`w-full px-2 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold outline-none focus:border-emerald-500 focus:ring-0`}
+                    className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold outline-none focus:border-emerald-500 focus:ring-0`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                   />
@@ -875,29 +875,29 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                     className="overflow-hidden"
                   >
-                    <div className={`grid gap-1.5 pb-2 ${!enquiry ? 'grid-cols-2 @[500px]:grid-cols-3' : 'grid-cols-1 @[500px]:grid-cols-2'}`}>
+                    <div className={`grid gap-1.5 ${!enquiry ? 'grid-cols-2 @[500px]:grid-cols-3' : 'grid-cols-1 @[500px]:grid-cols-2'}`}>
                       {enquiry ? (
                         <>
                           <div className="space-y-0 col-span-2">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">POC *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">City *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Contact *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -906,25 +906,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       ) : (
                         <>
                           <div className="space-y-0">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">City *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">POC *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
                           </div>
                           <div className="space-y-0">
-                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Contact *</label>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`w-full px-2 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -938,11 +938,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
               {/* Lead Overview */}
               <div className="space-y-0">
-                <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Overview *</label>
+                <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Lead Overview *</label>
                 <textarea 
                   ref={overviewRef}
                   rows={1}
-                  className={`w-full px-2 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]`}
+                  className={`block w-full px-1 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]`}
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
@@ -951,11 +951,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
               {/* Lead Details */}
               <div className="space-y-0">
-                <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Details</label>
+                <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Lead Details</label>
                 <textarea 
                   ref={detailsRef}
                   rows={1}
-                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]"
+                  className="block w-full px-1 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]"
                   value={formData.leadDetails}
                   onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                   placeholder="Detailed requirements, specifications, etc..."
@@ -965,7 +965,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Type, Lead Date, Channel */}
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
                   <div className={`flex items-stretch bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded h-[26px] p-0.5 focus-within:border-emerald-500 focus-within:ring-0 transition-colors`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
@@ -984,10 +984,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </div>
                 </div>
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Lead Date</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Date</label>
                   <input 
                     type="date"
-                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-emerald-500 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
+                    className="block w-full px-1 py-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-emerald-500 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
                     value={formData.leadDate}
                     onChange={(e) => {
                       setFormData({...formData, leadDate: e.target.value});
@@ -996,9 +996,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   />
                 </div>
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Channel</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Channel</label>
                   <select 
-                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                   >
@@ -1012,7 +1012,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
               {/* Micro-Dropzone: Files & Attachments */}
               <div 
-                className="space-y-1 p-2 -mx-2 rounded-lg transition-colors hover:bg-gray-50/50"
+                className="space-y-1 px-2 py-0 -mx-2 rounded-lg transition-colors hover:bg-gray-50/50"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
               >
@@ -1073,10 +1073,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Commercials */}
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Order Value (₹)</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Order Value (₹)</label>
                   <input 
                     type="text"
-                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500 focus:ring-0 text-right"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500 focus:ring-0 text-right"
                     value={formatInputCurrency(formData.orderValue)}
                     onChange={(e) => {
                       const input = e.target;
@@ -1105,9 +1105,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   />
                 </div>
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Prob (%)</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Prob (%)</label>
                   <select 
-                    className="w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                   >
@@ -1116,7 +1116,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </select>
                 </div>
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Expected Value</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Expected Value</label>
                   <div className="w-full px-1 h-[26px] flex items-center justify-end tracking-tight bg-gray-50 border border-gray-200 text-gray-800 rounded text-[11px] font-bold text-right">
                     {formatIndianCurrency(formData.expectedValue || 0)}
                   </div>
@@ -1126,7 +1126,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Roles */}
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Revenue Role *</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Revenue Role *</label>
                   <UserSelector 
                     users={MOCK_USERS.filter(u => u.role === 'revenue' || u.role === 'admin')}
                     selectedUsers={formData.revenueRoles || []}
@@ -1159,7 +1159,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </UserSelector>
                 </div>
                 <div className="space-y-0">
-                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Supply Role</label>
+                  <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Supply Role</label>
                   <UserSelector 
                     users={MOCK_USERS.filter(u => u.role === 'supply' || u.role === 'admin')}
                     selectedUsers={formData.supplyRoles || []}
@@ -1201,7 +1201,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             {/* Unified Task Creation */}
             <div className="p-1.5 min-[height:801px]:p-3 border-b border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col gap-1 min-[height:801px]:gap-2">
-                {/* Action Item Textarea - Always full width */}
+                {/* Primary Action Section */}
                 <div>
                   <div className="flex items-center mb-0.5 h-[18px]">
                     <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Action Item *</label>
@@ -1236,7 +1236,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 {/* Secondary Controls - Responsive Layout */}
                 {!enquiry ? (
                   <>
-                    {/* Row 2: Remark field */}
+                    {/* Remark Section */}
                     <div>
                       <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Remark</label>
                       <textarea 
@@ -1251,15 +1251,80 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         }}
                       />
                     </div>
-                    {/* Row 3: Type, Due Date, Submit CTA */}
-                    <div className="grid grid-cols-[auto_1fr_auto] gap-2 items-end">
+                    {/* Metadata Section */}
+                    <div>
+                      <div className="grid grid-cols-[auto_1fr_auto] gap-1.5 items-start">
+                        {/* Type Pill Toggle */}
+                        <div>
+                          <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
+                          <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
+                            <button 
+                              onClick={() => setNewAction({...newAction, type: 'revenue'})}
+                              className={`px-2 text-[10px] font-bold rounded transition-all ${
+                                newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              REV
+                            </button>
+                            <button 
+                              onClick={() => setNewAction({...newAction, type: 'supply'})}
+                              className={`px-2 text-[10px] font-bold rounded transition-all ${
+                                newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              SUP
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Due Date */}
+                        <div>
+                          <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Due Date *</label>
+                          <input 
+                            ref={actionDateRef}
+                            type="date"
+                            className={`w-full bg-white border rounded px-2 py-1 text-[11px] outline-none transition-colors h-[26px] ${
+                              actionValidationErrors.includes('date')
+                                ? 'border-red-500 bg-red-50'
+                                : 'border-gray-200'
+                            } focus:border-emerald-500 focus:ring-0`}
+                            value={newAction.date}
+                            onChange={(e) => {
+                              setNewAction({...newAction, date: e.target.value});
+                              if (actionValidationErrors.includes('date')) {
+                                setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
+                              }
+                              e.target.blur();
+                            }}
+                          />
+                        </div>
+
+                        {/* Compact Icon-only Submit Button */}
+                        <div>
+                          <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none">Action</label>
+                          <button 
+                            onClick={() => addActionItem(newAction.type)}
+                            title="Create Task"
+                            className={`w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
+                              newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                            }`}
+                          >
+                            <CornerDownLeft size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-1.5 items-start`}>
                       {/* Type Pill Toggle */}
                       <div>
                         <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
                         <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
                           <button 
                             onClick={() => setNewAction({...newAction, type: 'revenue'})}
-                            className={`px-2 text-[9px] font-bold rounded transition-all ${
+                            className={`px-2 text-[10px] font-bold rounded transition-all ${
                               newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
                             }`}
                           >
@@ -1267,7 +1332,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           </button>
                           <button 
                             onClick={() => setNewAction({...newAction, type: 'supply'})}
-                            className={`px-2 text-[9px] font-bold rounded transition-all ${
+                            className={`px-2 text-[10px] font-bold rounded transition-all ${
                               newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
                             }`}
                           >
@@ -1298,9 +1363,25 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         />
                       </div>
 
+                      {/* Remark - Maximized in Wide View */}
+                      <div>
+                        <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Remark</label>
+                        <textarea 
+                          rows={1}
+                          placeholder="Additional notes..."
+                          className={`w-full bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                          value={newAction.remark}
+                          onChange={(e) => {
+                            setNewAction({...newAction, remark: e.target.value});
+                            e.target.style.height = 'auto';
+                            e.target.style.height = (e.target.scrollHeight + 2) + 'px';
+                          }}
+                        />
+                      </div>
+
                       {/* Compact Icon-only Submit Button */}
                       <div>
-                        <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none mb-0.5">Action</label>
+                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none">Action</label>
                         <button 
                           onClick={() => addActionItem(newAction.type)}
                           title="Create Task"
@@ -1311,83 +1392,6 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <CornerDownLeft size={14} />
                         </button>
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-2 items-start`}>
-                    {/* Type Pill Toggle */}
-                    <div>
-                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Type *</label>
-                      <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
-                        <button 
-                          onClick={() => setNewAction({...newAction, type: 'revenue'})}
-                          className={`px-2 text-[9px] font-bold rounded transition-all ${
-                            newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          REV
-                        </button>
-                        <button 
-                          onClick={() => setNewAction({...newAction, type: 'supply'})}
-                          className={`px-2 text-[9px] font-bold rounded transition-all ${
-                            newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          SUP
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Due Date */}
-                    <div>
-                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Due Date *</label>
-                      <input 
-                        ref={actionDateRef}
-                        type="date"
-                        className={`w-full bg-white border rounded px-2 py-1 text-[11px] outline-none transition-colors h-[26px] ${
-                          actionValidationErrors.includes('date')
-                            ? 'border-red-500 bg-red-50'
-                            : 'border-gray-200'
-                        } focus:border-emerald-500 focus:ring-0`}
-                        value={newAction.date}
-                        onChange={(e) => {
-                          setNewAction({...newAction, date: e.target.value});
-                          if (actionValidationErrors.includes('date')) {
-                            setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
-                          }
-                          e.target.blur();
-                        }}
-                      />
-                    </div>
-
-                    {/* Remark - Maximized in Wide View */}
-                    <div>
-                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase mb-0.5">Remark</label>
-                      <textarea 
-                        rows={1}
-                        placeholder="Additional notes..."
-                        className={`w-full bg-white border border-gray-200 rounded px-2 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
-                        value={newAction.remark}
-                        onChange={(e) => {
-                          setNewAction({...newAction, remark: e.target.value});
-                          e.target.style.height = 'auto';
-                          e.target.style.height = (e.target.scrollHeight + 2) + 'px';
-                        }}
-                      />
-                    </div>
-
-                    {/* Compact Icon-only Submit Button */}
-                    <div>
-                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none mb-0.5">Action</label>
-                      <button 
-                        onClick={() => addActionItem(newAction.type)}
-                        title="Create Task"
-                        className={`w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
-                          newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                        }`}
-                      >
-                        <CornerDownLeft size={14} />
-                      </button>
                     </div>
                   </div>
                 )}
