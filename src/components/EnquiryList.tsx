@@ -450,7 +450,7 @@ export default function EnquiryList({
   return (
     <div className="flex flex-col h-full">
       {/* Header & Tabs */}
-      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-2 flex items-center justify-between shrink-0">
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-2 flex items-center justify-between shrink-0 h-[44px] min-[height:801px]:h-[52px]">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
           {(['Active', 'Converted', 'Dropped'] as EnquiryStatus[]).map((status) => (
             <button
@@ -477,7 +477,7 @@ export default function EnquiryList({
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-9 min-[height:801px]:h-11 overflow-x-auto no-scrollbar">
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-[40px] min-[height:801px]:h-[48px] overflow-x-auto no-scrollbar">
         <div className="relative flex-1 min-w-[120px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input 
