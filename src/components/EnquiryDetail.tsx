@@ -89,6 +89,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   const [newAction, setNewAction] = useState({ text: '', date: '', remark: '', type: 'revenue' as 'revenue' | 'supply' });
 
+  const isReadOnly = formData.status === 'Converted' || formData.status === 'Dropped';
+
   const defaultFormData = React.useMemo(() => ({
     id: nextEnquiryId,
     customerName: '',
@@ -338,11 +340,13 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     users, 
     selectedUsers, 
     onToggle,
+    disabled,
     children
   }: { 
     users: User[], 
     selectedUsers: string[], 
     onToggle: (userId: string) => void,
+    disabled?: boolean,
     children: React.ReactNode
   }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -368,6 +372,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
     }, [isOpen]);
 
     const handleToggle = () => {
+      if (disabled) return;
       if (!isOpen && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
@@ -794,6 +799,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           {formData.status && (
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
               formData.status === 'Active' ? 'bg-success-light text-success-dark border-success-light' :
+              formData.status === 'Converted' ? 'bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]' :
+              formData.status === 'Dropped' ? 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA]' :
               'bg-gray-100 text-gray-800 border-gray-200'
             }`}>
               {formData.status}
@@ -819,6 +826,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   })}
                 </div>
               )}
+
+              {formData.revenueRoles?.length > 0 && formData.supplyRoles?.length > 0 && (
+                <div className="w-px h-4 bg-[#E5E7EB] mx-1"></div>
+              )}
+
               {formData.supplyRoles?.length > 0 && (
                 <div className="flex gap-1" title="Supply Roles">
                   {formData.supplyRoles.map(uid => {
@@ -839,43 +851,56 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           )}
         </div>
         <div className="flex items-center gap-2">
-          {formData.status === 'Active' && (
+          {isReadOnly ? (
+            <button 
+              onClick={() => {
+                setFormData(prev => ({ ...prev, status: 'Active' }));
+              }}
+              className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+            >
+              RE-OPEN
+            </button>
+          ) : (
             <>
+              {formData.status === 'Active' && (
+                <>
+                  <button 
+                    onClick={() => {
+                      const errors = validateForm();
+                      if (errors.length > 0) {
+                        setValidationErrors(errors);
+                        setShowValidationModal(true);
+                      } else {
+                        setShowConvertModal(true);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-[#111827] hover:bg-[#111827]/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+                  >
+                    <ArrowRight size={14} /> CONVERT
+                  </button>
+                  <button 
+                    onClick={() => setShowDropModal(true)}
+                    className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+                  >
+                    <Trash2 size={14} /> DROP
+                  </button>
+                </>
+              )}
+              <div className="w-px h-6 bg-gray-200 mx-1" />
               <button 
-                onClick={() => {
-                  const errors = validateForm();
-                  if (errors.length > 0) {
-                    setValidationErrors(errors);
-                    setShowValidationModal(true);
-                  } else {
-                    setShowConvertModal(true);
-                  }
-                }}
-                className="px-3 py-1.5 bg-[#111827] hover:bg-[#111827]/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+                onClick={handleManualSave}
+                disabled={isSavingUI}
+                className={`px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors ${isSavingUI ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                <ArrowRight size={14} /> CONVERT
-              </button>
-              <button 
-                onClick={() => setShowDropModal(true)}
-                className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
-              >
-                <Trash2 size={14} /> DROP
+                {isSavingUI ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+                ) : (
+                  <Save size={14} />
+                )}
+                SAVE
               </button>
             </>
           )}
-          <div className="w-px h-6 bg-gray-200 mx-1" />
-          <button 
-            onClick={handleManualSave}
-            disabled={isSavingUI}
-            className={`px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors ${isSavingUI ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {isSavingUI ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
-            ) : (
-              <Save size={14} />
-            )}
-            SAVE
-          </button>
           <button 
             onClick={handleCloseRequest}
             className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
@@ -914,6 +939,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] font-semibold outline-none focus:ring-0`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
+                    disabled={isReadOnly}
                   />
                   <datalist id="customers">
                     {MOCK_CUSTOMERS.map(c => <option key={c.id} value={c.name} />)}
@@ -940,6 +966,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                           <div className="space-y-0">
@@ -948,6 +975,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                           <div className="space-y-0">
@@ -956,6 +984,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                         </>
@@ -967,6 +996,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                           <div className="space-y-0">
@@ -975,6 +1005,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                           <div className="space-y-0">
@@ -983,6 +1014,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                              disabled={isReadOnly}
                             />
                           </div>
                         </>
@@ -1002,6 +1034,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
+                  disabled={isReadOnly}
                 />
               </div>
 
@@ -1015,6 +1048,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   value={formData.leadDetails}
                   onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                   placeholder="Detailed requirements, specifications, etc..."
+                  disabled={isReadOnly}
                 />
               </div>
 
@@ -1022,16 +1056,17 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                  <div className={`flex items-stretch bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50 focus-within:border-red-600' : 'border-gray-200 focus-within:border-primary'} rounded h-[26px] p-0.5 focus-within:ring-0 transition-colors`}>
+                  <div className={`flex items-stretch bg-gray-100 border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50 focus-within:border-red-600' : 'border-gray-200 focus-within:border-primary'} rounded h-[26px] p-0.5 focus-within:ring-0 transition-colors`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
                         key={t}
                         type="button"
+                        disabled={isReadOnly}
                         onClick={() => setFormData({...formData, type: t})}
                         className={`flex-1 h-full flex items-center justify-center px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
                           formData.type === t 
-                          ? 'bg-primary text-white shadow-sm' 
-                          : 'text-gray-500 hover:bg-gray-200'
+                          ? 'bg-white text-primary shadow-sm' 
+                          : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >
                         {t}
@@ -1049,6 +1084,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       setFormData({...formData, leadDate: e.target.value});
                       e.target.blur();
                     }}
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div className="space-y-0">
@@ -1057,6 +1093,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
+                    disabled={isReadOnly}
                   >
                     <option value="">Select...</option>
                     {['Direct', 'Website', 'WhatsApp', 'LinkedIn', 'Event', 'Others'].map(c => (
@@ -1078,6 +1115,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   className="hidden" 
                   multiple 
                   onChange={handleFileChange} 
+                  disabled={isReadOnly}
                 />
                 
                 {/* Horizontal File Previews (Only visible if files exist) */}
@@ -1117,13 +1155,15 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 )}
 
                 {/* Compact CTA */}
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer bg-gray-50/50"
-                >
-                  <Paperclip size={12} className="text-gray-500" />
-                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Attach Files</span>
-                </div>
+                {!isReadOnly && (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer bg-gray-50/50"
+                  >
+                    <Paperclip size={12} className="text-gray-500" />
+                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Attach Files</span>
+                  </div>
+                )}
               </div>
 
               {/* Commercials */}
@@ -1158,6 +1198,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         input.setSelectionRange(newPos, newPos);
                       });
                     }}
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div className="space-y-0">
@@ -1166,6 +1207,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
+                    disabled={isReadOnly}
                   >
                     <option value="">Select...</option>
                     {[10, 30, 50, 70, 90].map(p => <option key={p} value={p}>{p}%</option>)}
@@ -1194,6 +1236,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         setFormData({...formData, revenueRoles: [...current, userId]});
                       }
                     }}
+                    disabled={isReadOnly}
                   >
                     <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors`}>
                       {formData.revenueRoles?.map(uid => {
@@ -1227,6 +1270,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         setFormData({...formData, supplyRoles: [...current, userId]});
                       }
                     }}
+                    disabled={isReadOnly}
                   >
                     <div className="flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors">
                       {formData.supplyRoles?.map(uid => {
@@ -1255,77 +1299,140 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           {/* Right: Action Items (Pinned/Sticky) */}
           <div className="flex flex-col bg-gray-50/50 overflow-hidden border-l border-gray-100">
             {/* Unified Task Creation */}
-            <div className="p-1.5 min-[height:801px]:p-3 border-b border-gray-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-2 min-[height:801px]:gap-3">
-                {/* Primary Action Section */}
-                <div>
-                  <div className="flex items-center mb-0.5 h-[18px]">
-                    <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Action Item *</label>
-                  </div>
-                  <textarea 
-                    ref={actionTextRef}
-                    rows={1}
-                    placeholder="What needs to be done?"
-                    className={`block w-full bg-white border rounded px-1 py-1 h-[26px] min-h-[26px] text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
-                      actionValidationErrors.includes('text') 
-                        ? 'border-red-500 bg-red-50 focus:border-red-600' 
-                        : `border-gray-200 focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'}`
-                    } focus:ring-0 placeholder:font-normal placeholder:text-gray-400`}
-                    value={newAction.text}
-                    onChange={(e) => {
-                      setNewAction({...newAction, text: e.target.value});
-                      if (actionValidationErrors.includes('text')) {
-                        setActionValidationErrors(prev => prev.filter(err => err !== 'text'));
-                      }
-                      e.target.style.height = 'auto';
-                      e.target.style.height = (e.target.scrollHeight + 2) + 'px';
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        addActionItem(newAction.type);
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Secondary Controls - Responsive Layout */}
-                {!displayEnquiry ? (
-                  <>
-                    {/* Remark Section */}
-                    <div>
-                      <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
-                      <textarea 
-                        rows={1}
-                        placeholder="Additional notes..."
-                        className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-primary focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
-                        value={newAction.remark}
-                        onChange={(e) => {
-                          setNewAction({...newAction, remark: e.target.value});
-                          e.target.style.height = 'auto';
-                          e.target.style.height = (e.target.scrollHeight + 2) + 'px';
-                        }}
-                      />
+            {!isReadOnly && (
+              <div className="p-1.5 min-[height:801px]:p-3 border-b border-gray-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-2 min-[height:801px]:gap-3">
+                  {/* Primary Action Section */}
+                  <div>
+                    <div className="flex items-center mb-0.5 h-[18px]">
+                      <label className="text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Action Item *</label>
                     </div>
-                    {/* Metadata Section */}
+                    <textarea 
+                      ref={actionTextRef}
+                      rows={1}
+                      placeholder="What needs to be done?"
+                      className={`block w-full bg-white border rounded px-1 py-1 h-[26px] min-h-[26px] text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
+                        actionValidationErrors.includes('text') 
+                          ? 'border-red-500 bg-red-50 focus:border-red-600' 
+                          : 'border-gray-200 focus:border-[#1E40AF]'
+                      } focus:ring-0 placeholder:font-normal placeholder:text-gray-400`}
+                      value={newAction.text}
+                      onChange={(e) => {
+                        setNewAction({...newAction, text: e.target.value});
+                        if (actionValidationErrors.includes('text')) {
+                          setActionValidationErrors(prev => prev.filter(err => err !== 'text'));
+                        }
+                        e.target.style.height = 'auto';
+                        e.target.style.height = (e.target.scrollHeight + 2) + 'px';
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          addActionItem(newAction.type);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Secondary Controls - Responsive Layout */}
+                  {!displayEnquiry ? (
+                    <>
+                      {/* Remark Section */}
+                      <div>
+                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
+                        <textarea 
+                          rows={1}
+                          placeholder="Additional notes..."
+                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-primary focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                          value={newAction.remark}
+                          onChange={(e) => {
+                            setNewAction({...newAction, remark: e.target.value});
+                            e.target.style.height = 'auto';
+                            e.target.style.height = (e.target.scrollHeight + 2) + 'px';
+                          }}
+                        />
+                      </div>
+                      {/* Metadata Section */}
+                      <div>
+                        <div className="grid grid-cols-[auto_1fr_auto] gap-1.5 items-start">
+                          {/* Type Pill Toggle */}
+                          <div>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
+                            <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-[#1E40AF] focus-within:ring-0 transition-colors">
+                              <button 
+                                onClick={() => setNewAction({...newAction, type: 'revenue'})}
+                                className={`flex-1 px-2 text-[10px] font-bold rounded transition-all ${
+                                  newAction.type === 'revenue' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                                }`}
+                              >
+                                REV
+                              </button>
+                              <button 
+                                onClick={() => setNewAction({...newAction, type: 'supply'})}
+                                className={`flex-1 px-2 text-[10px] font-bold rounded transition-all ${
+                                  newAction.type === 'supply' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                                }`}
+                              >
+                                SUP
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Due Date */}
+                          <div>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Due Date *</label>
+                            <input 
+                              ref={actionDateRef}
+                              type="date"
+                              className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
+                                actionValidationErrors.includes('date')
+                                  ? 'border-red-500 bg-red-50 focus:border-red-600'
+                                  : 'border-gray-200 focus:border-[#1E40AF]'
+                              } focus:ring-0`}
+                              value={newAction.date}
+                              onChange={(e) => {
+                                setNewAction({...newAction, date: e.target.value});
+                                if (actionValidationErrors.includes('date')) {
+                                  setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
+                                }
+                                e.target.blur();
+                              }}
+                            />
+                          </div>
+
+                          {/* Compact Icon-only Submit Button */}
+                          <div>
+                            <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none">Action</label>
+                            <button 
+                              onClick={() => addActionItem(newAction.type)}
+                              title="Create Task"
+                              className="w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm bg-[#1E40AF] hover:bg-[#1E3A8A]"
+                            >
+                              <CornerDownLeft size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
                     <div>
-                      <div className="grid grid-cols-[auto_1fr_auto] gap-1.5 items-start">
+                      <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-1.5 items-start`}>
                         {/* Type Pill Toggle */}
                         <div>
                           <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                          <div className={`flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus-within:ring-0 transition-colors`}>
+                          <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-[#1E40AF] focus-within:ring-0 transition-colors">
                             <button 
                               onClick={() => setNewAction({...newAction, type: 'revenue'})}
-                              className={`px-2 text-[10px] font-bold rounded transition-all ${
-                                newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                              className={`flex-1 px-2 text-[10px] font-bold rounded transition-all ${
+                                newAction.type === 'revenue' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
                               }`}
                             >
                               REV
                             </button>
                             <button 
                               onClick={() => setNewAction({...newAction, type: 'supply'})}
-                              className={`px-2 text-[10px] font-bold rounded transition-all ${
-                                newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
+                              className={`flex-1 px-2 text-[10px] font-bold rounded transition-all ${
+                                newAction.type === 'supply' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
                               }`}
                             >
                               SUP
@@ -1341,9 +1448,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             type="date"
                             className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
                               actionValidationErrors.includes('date')
-                                ? 'border-red-500 bg-red-50 focus:border-red-600'
-                                : `border-gray-200 focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'}`
-                            } focus:ring-0`}
+                                ? 'border-red-500 bg-red-50'
+                                : 'border-gray-200'
+                            } focus:border-primary focus:ring-0`}
                             value={newAction.date}
                             onChange={(e) => {
                               setNewAction({...newAction, date: e.target.value});
@@ -1355,112 +1462,47 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           />
                         </div>
 
+                        {/* Remark - Maximized in Wide View */}
+                        <div>
+                          <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
+                          <textarea 
+                            rows={1}
+                            placeholder="Additional notes..."
+                            className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-[#1E40AF] focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                            value={newAction.remark}
+                            onChange={(e) => {
+                              setNewAction({...newAction, remark: e.target.value});
+                              e.target.style.height = 'auto';
+                              e.target.style.height = (e.target.scrollHeight + 2) + 'px';
+                            }}
+                          />
+                        </div>
+
                         {/* Compact Icon-only Submit Button */}
                         <div>
                           <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none">Action</label>
                           <button 
                             onClick={() => addActionItem(newAction.type)}
                             title="Create Task"
-                            className={`w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
-                              newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                            }`}
+                            className="w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm bg-[#1E40AF] hover:bg-[#1E3A8A]"
                           >
                             <CornerDownLeft size={14} />
                           </button>
                         </div>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <div>
-                    <div className={`grid grid-cols-[auto_auto_1fr_auto] gap-1.5 items-start`}>
-                      {/* Type Pill Toggle */}
-                      <div>
-                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                        <div className={`flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus-within:ring-0 transition-colors`}>
-                          <button 
-                            onClick={() => setNewAction({...newAction, type: 'revenue'})}
-                            className={`px-2 text-[10px] font-bold rounded transition-all ${
-                              newAction.type === 'revenue' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            REV
-                          </button>
-                          <button 
-                            onClick={() => setNewAction({...newAction, type: 'supply'})}
-                            className={`px-2 text-[10px] font-bold rounded transition-all ${
-                              newAction.type === 'supply' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            SUP
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Due Date */}
-                      <div>
-                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Due Date *</label>
-                        <input 
-                          ref={actionDateRef}
-                          type="date"
-                          className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
-                            actionValidationErrors.includes('date')
-                              ? 'border-red-500 bg-red-50'
-                              : 'border-gray-200'
-                          } focus:border-primary focus:ring-0`}
-                          value={newAction.date}
-                          onChange={(e) => {
-                            setNewAction({...newAction, date: e.target.value});
-                            if (actionValidationErrors.includes('date')) {
-                              setActionValidationErrors(prev => prev.filter(err => err !== 'date'));
-                            }
-                            e.target.blur();
-                          }}
-                        />
-                      </div>
-
-                      {/* Remark - Maximized in Wide View */}
-                      <div>
-                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Remark</label>
-                        <textarea 
-                          rows={1}
-                          placeholder="Additional notes..."
-                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
-                          value={newAction.remark}
-                          onChange={(e) => {
-                            setNewAction({...newAction, remark: e.target.value});
-                            e.target.style.height = 'auto';
-                            e.target.style.height = (e.target.scrollHeight + 2) + 'px';
-                          }}
-                        />
-                      </div>
-
-                      {/* Compact Icon-only Submit Button */}
-                      <div>
-                        <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-transparent uppercase select-none">Action</label>
-                        <button 
-                          onClick={() => addActionItem(newAction.type)}
-                          title="Create Task"
-                          className={`w-full h-[26px] px-3 rounded text-white transition-colors flex items-center justify-center font-bold shadow-sm ${
-                            newAction.type === 'revenue' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                          }`}
-                        >
-                          <CornerDownLeft size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Side-by-Side Lists */}
             <div className={`flex-1 grid ${!displayEnquiry ? 'grid-cols-1' : 'grid-cols-2'} overflow-hidden transition-all duration-500`}>
               {/* Revenue Column */}
               <div className={`flex flex-col ${displayEnquiry ? 'border-r' : 'border-b'} border-gray-200 overflow-hidden`}>
                 <div className="px-3 py-1.5 bg-white border-b border-gray-200 flex items-center gap-2 shrink-0">
-                  <CheckCircle2 size={12} className="text-red-500" />
-                  <h3 className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Revenue Actions</h3>
+                  <CheckCircle2 size={12} className="text-[#6B7280]" />
+                  <h3 className="text-[9px] font-bold text-[#374151] uppercase tracking-wider">Revenue Actions</h3>
                   <span className="ml-auto text-[9px] font-bold text-gray-500 bg-white px-1.5 py-0.5 rounded-full border border-gray-200">
                     {formData.revenueActions?.filter(a => !a.isCompleted).length} Active
                   </span>
@@ -1480,17 +1522,17 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         key={item.id} 
                         className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
-                        <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
-                          {item.isCompleted ? <CheckCircle2 size={14} className="text-success" /> : <Circle size={14} className="text-gray-300 hover:text-primary/80" />}
+                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'revenue')} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-default' : 'hover:bg-gray-100'}`}>
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-[#059669]" /> : <Circle size={14} className={`text-gray-300 ${!isReadOnly ? 'hover:text-[#1E40AF]/80' : ''}`} />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="relative">
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-red-500 hover:underline'}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : `text-gray-500 ${!isReadOnly ? 'hover:underline' : 'pointer-events-none'}`}`}
                               value={item.dueDate}
-                              disabled={item.isCompleted}
+                              disabled={item.isCompleted || isReadOnly}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'revenue', 'dueDate', e.target.value);
@@ -1498,11 +1540,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             />
 
                             {/* Action Text */}
-                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted && !isReadOnly ? (
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-[calc(100%-80px)] mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-red-600 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
+                                className="w-[calc(100%-80px)] mt-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-[#1E40AF] focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
                                 value={item.action}
                                 onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 onChange={(e) => {
@@ -1515,8 +1557,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               />
                             ) : (
                               <p 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-red-600'}`}
+                                onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : `text-gray-800 ${!isReadOnly ? 'cursor-text hover:text-[#1E40AF]' : ''}`}`}
                               >
                                 {item.action}
                               </p>
@@ -1527,12 +1569,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           </div>
                           
                           {/* Remark */}
-                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted && !isReadOnly ? (
                             <textarea 
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-red-600 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
+                              className="w-full mt-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-[#1E40AF] focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
                               value={item.remark}
                               onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                               onChange={(e) => {
@@ -1545,10 +1587,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             />
                           ) : (
                             <p 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                              onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : `text-gray-500 ${!isReadOnly ? 'cursor-text hover:text-gray-700' : ''}`}`}
                             >
-                              {item.remark || (item.isCompleted ? '' : '+ Add remark')}
+                              {item.remark || (item.isCompleted || isReadOnly ? '' : '+ Add remark')}
                             </p>
                           )}
                         </div>
@@ -1560,8 +1602,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               {/* Supply Column */}
               <div className="flex flex-col overflow-hidden">
                 <div className="px-3 py-1.5 bg-white border-b border-gray-200 flex items-center gap-2 shrink-0">
-                  <Truck size={12} className="text-blue-500" />
-                  <h3 className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Supply Actions</h3>
+                  <Truck size={12} className="text-[#6B7280]" />
+                  <h3 className="text-[9px] font-bold text-[#374151] uppercase tracking-wider">Supply Actions</h3>
                   <span className="ml-auto text-[9px] font-bold text-gray-500 bg-white px-1.5 py-0.5 rounded-full border border-gray-200">
                     {formData.supplyActions?.filter(a => !a.isCompleted).length} Active
                   </span>
@@ -1581,17 +1623,17 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         key={item.id} 
                         className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
-                        <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
-                          {item.isCompleted ? <CheckCircle2 size={14} className="text-success" /> : <Circle size={14} className="text-gray-300 hover:text-primary/80" />}
+                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'supply')} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-default' : 'hover:bg-gray-100'}`}>
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-[#059669]" /> : <Circle size={14} className={`text-gray-300 ${!isReadOnly ? 'hover:text-[#1E40AF]/80' : ''}`} />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="relative">
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : 'text-blue-500 hover:underline'}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : `text-gray-500 ${!isReadOnly ? 'hover:underline' : 'pointer-events-none'}`}`}
                               value={item.dueDate}
-                              disabled={item.isCompleted}
+                              disabled={item.isCompleted || isReadOnly}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                               onChange={(e) => {
                                 updateActionItem(item.id, 'supply', 'dueDate', e.target.value);
@@ -1599,11 +1641,11 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             />
 
                             {/* Action Text */}
-                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted ? (
+                            {editingAction?.id === item.id && editingAction.field === 'action' && !item.isCompleted && !isReadOnly ? (
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-[calc(100%-80px)] mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-blue-600 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
+                                className="w-[calc(100%-80px)] mt-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-[#1E40AF] focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
                                 value={item.action}
                                 onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 onChange={(e) => {
@@ -1616,8 +1658,8 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               />
                             ) : (
                               <p 
-                                onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 cursor-text hover:text-blue-600'}`}
+                                onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : `text-gray-800 ${!isReadOnly ? 'cursor-text hover:text-[#1E40AF]' : ''}`}`}
                               >
                                 {item.action}
                               </p>
@@ -1628,12 +1670,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           </div>
                           
                           {/* Remark */}
-                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted ? (
+                          {editingAction?.id === item.id && editingAction.field === 'remark' && !item.isCompleted && !isReadOnly ? (
                             <textarea 
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-blue-600 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
+                              className="w-full mt-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-[#1E40AF] focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
                               value={item.remark}
                               onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                               onChange={(e) => {
@@ -1646,10 +1688,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             />
                           ) : (
                             <p 
-                              onClick={() => !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
+                              onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : `text-gray-500 ${!isReadOnly ? 'cursor-text hover:text-gray-700' : ''}`}`}
                             >
-                              {item.remark || (item.isCompleted ? '' : '+ Add remark')}
+                              {item.remark || (item.isCompleted || isReadOnly ? '' : '+ Add remark')}
                             </p>
                           )}
                         </div>
@@ -1734,7 +1776,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </button>
                   <button 
                     disabled={!dropReason.trim()}
-                    onClick={() => onDrop(formData as Enquiry, dropReason)}
+                    onClick={() => {
+                      setShowDropModal(false);
+                      onDrop(formData as Enquiry, dropReason);
+                    }}
                     className="px-4 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                   >
                     CONFIRM DROP

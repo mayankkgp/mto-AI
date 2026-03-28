@@ -68,10 +68,10 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
                 className={`w-full flex items-center px-4 py-1.5 min-[height:801px]:py-2.5 gap-3 transition-colors relative group ${
-                  isActive ? 'text-white bg-primary/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  isActive ? 'text-[#818CF8] bg-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Icon size={18} className={isActive ? 'text-primary' : ''} />
+                <Icon size={18} className={isActive ? 'text-[#818CF8]' : ''} />
                 {!isCollapsed && (
                   <span className="text-xs font-medium tracking-wide uppercase">
                     {item.label}
@@ -80,7 +80,7 @@ export default function Layout({ children, activeSection, onSectionChange }: Lay
                 {isActive && (
                   <motion.div 
                     layoutId="active-indicator"
-                    className="absolute left-0 w-1 h-full bg-primary"
+                    className="absolute left-0 w-1 h-full bg-[#818CF8]"
                   />
                 )}
               </button>

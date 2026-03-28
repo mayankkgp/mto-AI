@@ -93,20 +93,23 @@ export default function EnquiryList({
   // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!document.body.contains(target)) return;
+
+      if (showFilterMenu && filterMenuRef.current && !filterMenuRef.current.contains(target)) {
         setShowFilterMenu(false);
         setActiveCategory(null);
       }
-      if (typeMenuRef.current && !typeMenuRef.current.contains(event.target as Node)) {
+      if (showTypeMenu && typeMenuRef.current && !typeMenuRef.current.contains(target)) {
         setShowTypeMenu(false);
       }
-      if (revMenuRef.current && !revMenuRef.current.contains(event.target as Node)) {
+      if (showRevMenu && revMenuRef.current && !revMenuRef.current.contains(target)) {
         setShowRevMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showFilterMenu, showTypeMenu, showRevMenu]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -189,11 +192,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateStart} onChange={(e) => { setLeadDateStart(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateStart} onChange={(e) => setLeadDateStart(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateEnd} onChange={(e) => { setLeadDateEnd(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={leadDateEnd} onChange={(e) => setLeadDateEnd(e.target.value)} />
             </div>
           </div>
         );
@@ -202,11 +205,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueStart} onChange={(e) => { setRevDueStart(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueStart} onChange={(e) => setRevDueStart(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueEnd} onChange={(e) => { setRevDueEnd(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={revDueEnd} onChange={(e) => setRevDueEnd(e.target.value)} />
             </div>
           </div>
         );
@@ -215,11 +218,11 @@ export default function EnquiryList({
           <div className="p-2 space-y-2">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueStart} onChange={(e) => { setSupDueStart(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueStart} onChange={(e) => setSupDueStart(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueEnd} onChange={(e) => { setSupDueEnd(e.target.value); e.target.blur(); }} />
+              <input type="date" className="w-full px-2 py-1 border border-gray-200 rounded text-xs" value={supDueEnd} onChange={(e) => setSupDueEnd(e.target.value)} />
             </div>
           </div>
         );
@@ -477,7 +480,7 @@ export default function EnquiryList({
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-[40px] min-[height:801px]:h-[48px] overflow-x-auto no-scrollbar">
+      <div className="bg-white border-b border-gray-200 px-2 min-[height:801px]:px-4 py-1 min-[height:801px]:py-1.5 flex items-center gap-3 shrink-0 h-[40px] min-[height:801px]:h-[48px] relative z-40">
         <div className="relative flex-1 min-w-[120px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input 
@@ -514,7 +517,7 @@ export default function EnquiryList({
                   }
                   setShowTypeMenu(!showTypeMenu);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                 title={typeFilter ? `Type: ${typeFilter}` : 'Type: All'}
               >
                 <Tag size={14} className="md:hidden" />
@@ -526,8 +529,8 @@ export default function EnquiryList({
                   renderUpwardsType ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
                 }`}>
                   <button
-                    onClick={() => { setTypeFilter(''); setShowTypeMenu(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => setTypeFilter('')}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-gray-100 text-gray-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
                     All Types
                     {typeFilter === '' && <Check size={12} />}
@@ -535,8 +538,8 @@ export default function EnquiryList({
                   {['MTO', 'Ready'].map(t => (
                     <button
                       key={t}
-                      onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                      onClick={() => setTypeFilter(t)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-gray-100 text-gray-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                     >
                       {t}
                       {typeFilter === t && <Check size={12} />}
@@ -557,7 +560,7 @@ export default function EnquiryList({
                 }
                 setShowRevMenu(!showRevMenu);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
               title={revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All'}
             >
               <div className={`flex items-center gap-1 ${isCompact ? "" : "md:hidden"}`}>
@@ -572,8 +575,8 @@ export default function EnquiryList({
                 renderUpwardsRev ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
               }`}>
                 <button
-                  onClick={() => { setRevenueFilter([]); setShowRevMenu(false); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  onClick={() => setRevenueFilter([])}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.length === 0 ? 'bg-gray-100 text-gray-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   All Roles
                   {revenueFilter.length === 0 && <Check size={12} />}
@@ -587,7 +590,7 @@ export default function EnquiryList({
                         : [...revenueFilter, u.id];
                       setRevenueFilter(newFilter);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.includes(u.id) ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.includes(u.id) ? 'bg-gray-100 text-gray-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
                     {u.name}
                     {revenueFilter.includes(u.id) && <Check size={12} />}
@@ -598,7 +601,7 @@ export default function EnquiryList({
           </div>
 
           <div className="relative" ref={filterMenuRef}>
-            <div className={`flex items-center rounded transition-colors ${activeFilters.length > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-700'}`}>
+            <div className={`flex items-center rounded transition-colors ${activeFilters.length > 0 ? 'bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]' : 'bg-gray-100 text-gray-700'}`}>
               <button 
                 onClick={() => {
                   if (!showFilterMenu && filterMenuRef.current) {
@@ -613,7 +616,7 @@ export default function EnquiryList({
                 <Filter size={14} />
                 <span className={isCompact ? "hidden" : "hidden md:inline"}>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>
                 {activeFilters.length > 0 && (
-                  <span className={`flex items-center justify-center bg-primary text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none ${isCompact ? "" : "md:hidden"}`}>
+                  <span className={`flex items-center justify-center bg-gray-700 text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none ${isCompact ? "" : "md:hidden"}`}>
                     {activeFilters.length}
                   </span>
                 )}
@@ -621,7 +624,7 @@ export default function EnquiryList({
               {activeFilters.length > 0 && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); clearFilters(); }}
-                  className="px-1.5 py-1.5 hover:bg-primary/30 rounded-r border-l border-primary/20 transition-colors"
+                  className="px-1.5 py-1.5 hover:bg-gray-200 rounded-r border-l border-[#E5E7EB] transition-colors"
                   title="Clear All Filters"
                 >
                   <X size={14} />
@@ -638,9 +641,9 @@ export default function EnquiryList({
                     <div className="px-1 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Active Filters</div>
                     <div className="flex flex-wrap gap-1.5">
                       {activeFilters.map(pill => (
-                        <div key={pill.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-white text-primary border border-primary/20 rounded text-[10px] font-bold">
+                        <div key={pill.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB] rounded text-[10px] font-bold">
                           <span className="max-w-[120px] truncate">{pill.label}</span>
-                          <button onClick={pill.onClear} className="hover:text-primary transition-colors">
+                          <button onClick={pill.onClear} className="text-[#374151] hover:text-gray-900 transition-colors">
                             <X size={10} />
                           </button>
                         </div>
@@ -682,7 +685,7 @@ export default function EnquiryList({
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 bg-gray-50 z-30 border-b border-gray-200">
             <tr className="text-[10px] uppercase tracking-wider text-gray-500 font-bold whitespace-nowrap">
-              <SortHeader label="Customer" sortKey="customerName" className="sticky left-0 z-40 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[150px]" />
+              <SortHeader label="Customer" sortKey="customerName" className="sticky left-0 z-40 bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[150px]" />
               <th className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[200px] ${isCompact ? 'w-[200px]' : 'w-[25%]'}`}>Overview</th>
               <th className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1 border-r border-gray-200 min-w-[100px]">Rev Role</th>
               <SortHeader label="ID" sortKey="id" className="min-w-[100px]" />
@@ -702,12 +705,14 @@ export default function EnquiryList({
                 onClick={() => onEnquiryClick(enq)}
                 className={`cursor-pointer transition-colors group relative align-top ${
                   activeEnquiryId === enq.id 
-                    ? 'bg-primary/5 hover:bg-primary/10' 
+                    ? 'bg-[#F4F5FB] hover:bg-[#E9ECF7]' 
                     : 'bg-white hover:bg-gray-50'
                 }`}
               >
                 <td className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors ${
-                  activeEnquiryId === enq.id ? 'bg-inherit border-l-[3px] border-primary' : 'bg-inherit border-l-[3px] border-transparent'
+                  activeEnquiryId === enq.id 
+                    ? 'bg-[#F4F5FB] group-hover:bg-[#E9ECF7] border-l-[3px] border-primary' 
+                    : 'bg-white group-hover:bg-gray-50 border-l-[3px] border-transparent'
                 }`}>
                   {enq.customerName}
                 </td>
@@ -730,7 +735,7 @@ export default function EnquiryList({
                     })}
                   </div>
                 </td>
-                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-primary whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-[#374151] whitespace-nowrap">
                   {enq.id}
                 </td>
                 {statusTab === 'Converted' && (
@@ -738,10 +743,8 @@ export default function EnquiryList({
                     {enq.orderId || '-'}
                   </td>
                 )}
-                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 whitespace-nowrap">
-                  <span className="px-2 py-0 rounded-full text-[9px] font-bold uppercase bg-gray-100 text-gray-800 border border-gray-200">
-                    {enq.type}
-                  </span>
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-bold text-[#374151] uppercase whitespace-nowrap">
+                  {enq.type}
                 </td>
                 <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px]">
                   <div className="flex flex-nowrap gap-1">
