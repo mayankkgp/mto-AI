@@ -296,6 +296,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
   };
 
   const [showDropModal, setShowDropModal] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [actionValidationErrors, setActionValidationErrors] = useState<string[]>([]);
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
@@ -405,7 +406,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search users..."
-                  className="w-full px-1.5 py-1 text-[10px] bg-gray-50 border border-gray-100 rounded outline-none focus:border-emerald-500 focus:ring-0 transition-colors"
+                  className="w-full px-1.5 py-1 text-[10px] bg-gray-50 border border-gray-100 rounded outline-none focus:border-primary focus:ring-0 transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -423,12 +424,12 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         }}
                         className={`w-full text-left px-2 py-1.5 text-[10px] flex items-center justify-between transition-colors ${
                           isSelected 
-                            ? 'bg-emerald-50 text-emerald-700 font-bold' 
+                            ? 'bg-primary/10 text-primary font-bold' 
                             : 'hover:bg-gray-50 text-gray-700'
                         }`}
                       >
                         <span className="truncate">{user.name}</span>
-                        {isSelected && <Check size={10} className="text-emerald-600 shrink-0" />}
+                        {isSelected && <Check size={10} className="text-primary shrink-0" />}
                       </button>
                     );
                   })
@@ -791,10 +792,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             {displayEnquiry ? displayEnquiry.id : `Create New Enquiry: ${formData.id}`}
           </h2>
           {formData.status && (
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-              formData.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-              formData.status === 'Converted' ? 'bg-blue-100 text-blue-700' :
-              'bg-red-100 text-red-700'
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+              formData.status === 'Active' ? 'bg-success-light text-success-dark border-success-light' :
+              'bg-gray-100 text-gray-800 border-gray-200'
             }`}>
               {formData.status}
             </span>
@@ -810,7 +810,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     return user ? (
                       <div 
                         key={uid}
-                        className="w-5 h-5 rounded-full bg-red-100 text-red-700 border border-red-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
+                        className="w-5 h-5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
                         title={user.name}
                       >
                         {getInitials(user.name)}
@@ -826,7 +826,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     return user ? (
                       <div 
                         key={uid}
-                        className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
+                        className="w-5 h-5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 flex items-center justify-center text-[9px] font-bold z-10 relative"
                         title={user.name}
                       >
                         {getInitials(user.name)}
@@ -842,8 +842,16 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           {formData.status === 'Active' && (
             <>
               <button 
-                onClick={() => onConvert(formData as Enquiry)}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
+                onClick={() => {
+                  const errors = validateForm();
+                  if (errors.length > 0) {
+                    setValidationErrors(errors);
+                    setShowValidationModal(true);
+                  } else {
+                    setShowConvertModal(true);
+                  }
+                }}
+                className="px-3 py-1.5 bg-[#111827] hover:bg-[#111827]/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
               >
                 <ArrowRight size={14} /> CONVERT
               </button>
@@ -859,7 +867,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           <button 
             onClick={handleManualSave}
             disabled={isSavingUI}
-            className={`px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors ${isSavingUI ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors ${isSavingUI ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isSavingUI ? (
               <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
@@ -903,7 +911,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="relative">
                   <input 
                     list="customers"
-                    className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] font-semibold outline-none focus:border-emerald-500 focus:ring-0`}
+                    className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] font-semibold outline-none focus:ring-0`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                   />
@@ -929,7 +937,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0 col-span-2">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
@@ -937,7 +945,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
@@ -945,7 +953,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -956,7 +964,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                             />
@@ -964,7 +972,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                             />
@@ -972,7 +980,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                             />
@@ -990,7 +998,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={overviewRef}
                   rows={1}
-                  className={`block w-full px-1 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]`}
+                  className={`block w-full px-1 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 resize-none max-h-[80px]`}
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
@@ -1003,7 +1011,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={detailsRef}
                   rows={1}
-                  className="block w-full px-1 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0 resize-none max-h-[80px]"
+                  className="block w-full px-1 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0 resize-none max-h-[80px]"
                   value={formData.leadDetails}
                   onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                   placeholder="Detailed requirements, specifications, etc..."
@@ -1014,7 +1022,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                  <div className={`flex items-stretch bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded h-[26px] p-0.5 focus-within:border-emerald-500 focus-within:ring-0 transition-colors`}>
+                  <div className={`flex items-stretch bg-white border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50 focus-within:border-red-600' : 'border-gray-200 focus-within:border-primary'} rounded h-[26px] p-0.5 focus-within:ring-0 transition-colors`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
                         key={t}
@@ -1022,7 +1030,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         onClick={() => setFormData({...formData, type: t})}
                         className={`flex-1 h-full flex items-center justify-center px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
                           formData.type === t 
-                          ? 'bg-emerald-600 text-white shadow-sm' 
+                          ? 'bg-primary text-white shadow-sm' 
                           : 'text-gray-500 hover:bg-gray-200'
                         }`}
                       >
@@ -1035,7 +1043,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Date</label>
                   <input 
                     type="date"
-                    className="block w-full px-1 py-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-emerald-500 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
+                    className="block w-full px-1 py-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-primary focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
                     value={formData.leadDate}
                     onChange={(e) => {
                       setFormData({...formData, leadDate: e.target.value});
@@ -1046,7 +1054,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Channel</label>
                   <select 
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                   >
@@ -1111,7 +1119,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 {/* Compact CTA */}
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer bg-gray-50/50"
+                  className="border border-dashed border-gray-300 rounded py-1.5 px-3 flex items-center justify-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer bg-gray-50/50"
                 >
                   <Paperclip size={12} className="text-gray-500" />
                   <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Attach Files</span>
@@ -1124,7 +1132,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Order Value (₹)</label>
                   <input 
                     type="text"
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-emerald-500 focus:ring-0 text-right"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-primary focus:ring-0 text-left"
                     value={formatInputCurrency(formData.orderValue)}
                     onChange={(e) => {
                       const input = e.target;
@@ -1155,7 +1163,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Prob (%)</label>
                   <select 
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-emerald-500 focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                   >
@@ -1187,7 +1195,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       }
                     }}
                   >
-                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] hover:border-emerald-400 group-focus:border-emerald-500 transition-colors`}>
+                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors`}>
                       {formData.revenueRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
@@ -1200,7 +1208,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           </div>
                         );
                       })}
-                      <div className="p-0.5 text-gray-400 hover:text-emerald-600">
+                      <div className="p-0.5 text-gray-400 hover:text-primary">
                         <UserPlus size={12} />
                       </div>
                     </div>
@@ -1220,7 +1228,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       }
                     }}
                   >
-                    <div className="flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] hover:border-emerald-400 group-focus:border-emerald-500 transition-colors">
+                    <div className="flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors">
                       {formData.supplyRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
@@ -1233,7 +1241,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           </div>
                         );
                       })}
-                      <div className="p-0.5 text-gray-400 hover:text-emerald-600">
+                      <div className="p-0.5 text-gray-400 hover:text-primary">
                         <UserPlus size={12} />
                       </div>
                     </div>
@@ -1260,9 +1268,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     placeholder="What needs to be done?"
                     className={`block w-full bg-white border rounded px-1 py-1 h-[26px] min-h-[26px] text-[11px] font-bold outline-none resize-none transition-colors max-h-[120px] overflow-y-auto ${
                       actionValidationErrors.includes('text') 
-                        ? 'border-red-500 bg-red-50' 
-                        : 'border-gray-200'
-                    } focus:border-emerald-500 focus:ring-0 placeholder:font-normal placeholder:text-gray-400`}
+                        ? 'border-red-500 bg-red-50 focus:border-red-600' 
+                        : `border-gray-200 focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'}`
+                    } focus:ring-0 placeholder:font-normal placeholder:text-gray-400`}
                     value={newAction.text}
                     onChange={(e) => {
                       setNewAction({...newAction, text: e.target.value});
@@ -1290,7 +1298,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       <textarea 
                         rows={1}
                         placeholder="Additional notes..."
-                        className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                        className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-primary focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
                         value={newAction.remark}
                         onChange={(e) => {
                           setNewAction({...newAction, remark: e.target.value});
@@ -1305,7 +1313,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         {/* Type Pill Toggle */}
                         <div>
                           <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                          <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
+                          <div className={`flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus-within:ring-0 transition-colors`}>
                             <button 
                               onClick={() => setNewAction({...newAction, type: 'revenue'})}
                               className={`px-2 text-[10px] font-bold rounded transition-all ${
@@ -1333,9 +1341,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             type="date"
                             className={`block w-full bg-white border rounded px-1 py-1 text-[11px] outline-none transition-colors h-[26px] ${
                               actionValidationErrors.includes('date')
-                                ? 'border-red-500 bg-red-50'
-                                : 'border-gray-200'
-                            } focus:border-emerald-500 focus:ring-0`}
+                                ? 'border-red-500 bg-red-50 focus:border-red-600'
+                                : `border-gray-200 focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'}`
+                            } focus:ring-0`}
                             value={newAction.date}
                             onChange={(e) => {
                               setNewAction({...newAction, date: e.target.value});
@@ -1369,7 +1377,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                       {/* Type Pill Toggle */}
                       <div>
                         <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                        <div className="flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-emerald-500 focus-within:ring-0 transition-colors">
+                        <div className={`flex bg-white p-0.5 rounded border border-gray-200 h-[26px] focus-within:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus-within:ring-0 transition-colors`}>
                           <button 
                             onClick={() => setNewAction({...newAction, type: 'revenue'})}
                             className={`px-2 text-[10px] font-bold rounded transition-all ${
@@ -1399,7 +1407,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             actionValidationErrors.includes('date')
                               ? 'border-red-500 bg-red-50'
                               : 'border-gray-200'
-                          } focus:border-emerald-500 focus:ring-0`}
+                          } focus:border-primary focus:ring-0`}
                           value={newAction.date}
                           onChange={(e) => {
                             setNewAction({...newAction, date: e.target.value});
@@ -1417,7 +1425,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         <textarea 
                           rows={1}
                           placeholder="Additional notes..."
-                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-emerald-500 focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-${newAction.type === 'revenue' ? 'red-600' : 'blue-600'} focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
                           value={newAction.remark}
                           onChange={(e) => {
                             setNewAction({...newAction, remark: e.target.value});
@@ -1450,10 +1458,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
             <div className={`flex-1 grid ${!displayEnquiry ? 'grid-cols-1' : 'grid-cols-2'} overflow-hidden transition-all duration-500`}>
               {/* Revenue Column */}
               <div className={`flex flex-col ${displayEnquiry ? 'border-r' : 'border-b'} border-gray-200 overflow-hidden`}>
-                <div className="px-3 py-1.5 bg-red-50/50 border-b border-red-100 flex items-center gap-2 shrink-0">
+                <div className="px-3 py-1.5 bg-white border-b border-gray-200 flex items-center gap-2 shrink-0">
                   <CheckCircle2 size={12} className="text-red-500" />
                   <h3 className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Revenue Actions</h3>
-                  <span className="ml-auto text-[9px] font-bold text-red-400 bg-white px-1.5 py-0.5 rounded-full border border-red-100">
+                  <span className="ml-auto text-[9px] font-bold text-gray-500 bg-white px-1.5 py-0.5 rounded-full border border-gray-200">
                     {formData.revenueActions?.filter(a => !a.isCompleted).length} Active
                   </span>
                 </div>
@@ -1470,10 +1478,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
                         key={item.id} 
-                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-emerald-200'}`}
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
                         <button onClick={() => toggleActionCompletion(item.id, 'revenue')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
-                          {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-success" /> : <Circle size={14} className="text-gray-300 hover:text-primary/80" />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="relative">
@@ -1494,7 +1502,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-[calc(100%-80px)] mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-emerald-500 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
+                                className="w-[calc(100%-80px)] mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-red-600 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
                                 value={item.action}
                                 onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 onChange={(e) => {
@@ -1524,7 +1532,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-emerald-500 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
+                              className="w-full mt-1 bg-white border border-red-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-red-600 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
                               value={item.remark}
                               onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                               onChange={(e) => {
@@ -1551,10 +1559,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
               {/* Supply Column */}
               <div className="flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2 shrink-0">
+                <div className="px-3 py-1.5 bg-white border-b border-gray-200 flex items-center gap-2 shrink-0">
                   <Truck size={12} className="text-blue-500" />
                   <h3 className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Supply Actions</h3>
-                  <span className="ml-auto text-[9px] font-bold text-blue-400 bg-white px-1.5 py-0.5 rounded-full border border-blue-100">
+                  <span className="ml-auto text-[9px] font-bold text-gray-500 bg-white px-1.5 py-0.5 rounded-full border border-gray-200">
                     {formData.supplyActions?.filter(a => !a.isCompleted).length} Active
                   </span>
                 </div>
@@ -1571,10 +1579,10 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
                         key={item.id} 
-                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-emerald-200'}`}
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
                         <button onClick={() => toggleActionCompletion(item.id, 'supply')} className="shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded hover:bg-gray-100">
-                          {item.isCompleted ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className="text-gray-300 hover:text-emerald-400" />}
+                          {item.isCompleted ? <CheckCircle2 size={14} className="text-success" /> : <Circle size={14} className="text-gray-300 hover:text-primary/80" />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="relative">
@@ -1595,7 +1603,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               <textarea 
                                 autoFocus
                                 rows={1}
-                                className="w-[calc(100%-80px)] mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-emerald-500 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
+                                className="w-[calc(100%-80px)] mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[11px] font-bold outline-none focus:border-blue-600 focus:ring-0 resize-none placeholder:font-normal placeholder:text-gray-400"
                                 value={item.action}
                                 onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                                 onChange={(e) => {
@@ -1625,7 +1633,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                               autoFocus
                               rows={1}
                               placeholder="Add remark..."
-                              className="w-full mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-emerald-500 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
+                              className="w-full mt-1 bg-white border border-blue-200 rounded px-1 py-0.5 text-[10px] italic outline-none focus:border-blue-600 focus:ring-0 resize-none block placeholder:not-italic placeholder:text-gray-400"
                               value={item.remark}
                               onFocus={(e) => { e.target.setSelectionRange(e.target.value.length, e.target.value.length); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                               onChange={(e) => {
@@ -1653,6 +1661,45 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           </div>
         </div>
 
+        {/* Convert Confirmation Modal */}
+        <AnimatePresence>
+          {showConvertModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden"
+              >
+                <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-blue-50">
+                  <ArrowRight className="text-blue-600" size={20} />
+                  <h3 className="font-bold text-blue-900">Convert Enquiry</h3>
+                </div>
+                <div className="p-4">
+                  <p className="text-xs text-gray-600 font-medium">Are you sure you want to convert this enquiry? This action will mark the enquiry as converted and cannot be undone.</p>
+                </div>
+                <div className="p-4 bg-gray-50 flex justify-end gap-2">
+                  <button 
+                    onClick={() => setShowConvertModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowConvertModal(false);
+                      onConvert(formData as Enquiry);
+                    }}
+                    className="px-4 py-2 text-xs font-bold bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
+                  >
+                    Convert
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Drop Modal */}
         <AnimatePresence>
           {showDropModal && (
@@ -1671,7 +1718,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <p className="text-xs text-gray-600 font-medium">Please provide a reason for dropping this enquiry. This action is permanent.</p>
                   <textarea 
                     autoFocus
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:border-emerald-500 focus:ring-0"
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:border-primary focus:ring-0"
                     placeholder="E.g., Price mismatch, Customer unresponsive..."
                     rows={4}
                     value={dropReason}
@@ -1736,7 +1783,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               ) : (
                 <div className="w-full p-6 flex flex-col items-center justify-center bg-gray-50 gap-4" style={{ height: hoveredFile.constrainedHeight }}>
                   {hoveredFile.isWord ? <FileText size={64} className="text-blue-500" /> :
-                   hoveredFile.isExcel ? <FileSpreadsheet size={64} className="text-emerald-500" /> :
+                   hoveredFile.isExcel ? <FileSpreadsheet size={64} className="text-primary" /> :
                    <File size={64} className="text-gray-400" />}
                   <div className="text-center space-y-1">
                     <p className="text-sm font-bold text-gray-800">{hoveredFile.fileName}</p>
@@ -1813,7 +1860,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         file={lightboxFile.file}
                         loading={
                           <div className="flex items-center justify-center h-full text-gray-500">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mr-3"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
                             Loading PDF...
                           </div>
                         }
@@ -1823,7 +1870,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             <p>Failed to load PDF.</p>
                             <button 
                               onClick={() => handleDownload(lightboxFile.file, lightboxFile.fileName)}
-                              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                              className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                             >
                               Download Instead
                             </button>
@@ -1842,7 +1889,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   ) : (
                     <div className="w-full h-[400px] flex flex-col items-center justify-center bg-gray-900 text-gray-400 gap-4">
                       {lightboxFile.isWord ? <FileText size={64} className="text-blue-500" /> :
-                       lightboxFile.isExcel ? <FileSpreadsheet size={64} className="text-emerald-500" /> :
+                       lightboxFile.isExcel ? <FileSpreadsheet size={64} className="text-primary" /> :
                        <File size={64} className="text-gray-600" />}
                       <p className="text-sm font-medium">Live preview unavailable for this format.</p>
                       <button 
@@ -1854,7 +1901,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           link.click();
                           document.body.removeChild(link);
                         }}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-bold transition-colors flex items-center gap-2 mt-2 shadow-lg"
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg text-white text-sm font-bold transition-colors flex items-center gap-2 mt-2 shadow-lg"
                       >
                         <Download size={16} />
                         Download to View
@@ -1888,7 +1935,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           }}
                           className={`relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
                             isActive 
-                              ? 'border-emerald-500 opacity-100 scale-105 shadow-[0_0_15px_rgba(16,185,129,0.5)]' 
+                              ? 'border-primary opacity-100 scale-105 shadow-[0_0_15px_rgba(30,64,175,0.5)]' 
                               : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'
                           }`}
                           title={fileName}
@@ -1899,7 +1946,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                               {fileInfo.isPdf ? <FileText size={20} className="text-red-400" /> :
                                fileInfo.isWord ? <FileText size={20} className="text-blue-400" /> :
-                               fileInfo.isExcel ? <FileSpreadsheet size={20} className="text-emerald-400" /> :
+                               fileInfo.isExcel ? <FileSpreadsheet size={20} className="text-primary/80" /> :
                                <File size={20} className="text-gray-400" />}
                             </div>
                           )}
@@ -2004,7 +2051,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   )}
                   <button
                     onClick={() => setShowValidationModal(false)}
-                    className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors ${pendingAction ? 'flex-1' : 'w-full'}`}
+                    className={`px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-colors ${pendingAction ? 'flex-1' : 'w-full'}`}
                   >
                     Fix Errors
                   </button>
@@ -2040,7 +2087,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   </button>
                   <button
                     onClick={handleRetrySave}
-                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-colors"
                   >
                     Retry Save
                   </button>

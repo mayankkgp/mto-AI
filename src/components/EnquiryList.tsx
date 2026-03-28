@@ -162,7 +162,7 @@ export default function EnquiryList({
           <button
             key={c}
             onClick={() => setChannelFilter(channelFilter === c ? '' : c)}
-            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${channelFilter === c ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${channelFilter === c ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
           >
             {c}
             {channelFilter === c && <Check size={12} />}
@@ -178,7 +178,7 @@ export default function EnquiryList({
                 : [...supplyFilter, u.id];
               setSupplyFilter(newFilter);
             }}
-            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${supplyFilter.includes(u.id) ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${supplyFilter.includes(u.id) ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
           >
             {u.name}
             {supplyFilter.includes(u.id) && <Check size={12} />}
@@ -241,7 +241,7 @@ export default function EnquiryList({
           <button
             key={city}
             onClick={() => setCityFilter(cityFilter === city ? '' : city)}
-            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${cityFilter === city ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${cityFilter === city ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
           >
             {city}
             {cityFilter === city && <Check size={12} />}
@@ -386,7 +386,7 @@ export default function EnquiryList({
     } else if (diffDays === 1) {
       return { 
         text: 'Tomorrow', 
-        color: 'text-emerald-600 font-medium' 
+        color: 'text-primary font-medium' 
       };
     } else if (diffDays <= 7) {
       return { 
@@ -430,7 +430,7 @@ export default function EnquiryList({
       >
         <div className={`flex items-center gap-1 ${isRightAligned ? 'justify-end' : ''}`}>
           <span>{label}</span>
-          <div className={`transition-all ${isActive ? 'opacity-100 text-emerald-600' : 'opacity-0 group-hover:opacity-50'}`}>
+          <div className={`transition-all ${isActive ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-50'}`}>
             {isActive ? (
               sortConfig.direction === 'asc' ? <ChevronDown size={12} className="rotate-180" /> : <ChevronDown size={12} />
             ) : (
@@ -458,7 +458,7 @@ export default function EnquiryList({
               onClick={() => setStatusTab(status)}
               className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
                 statusTab === status 
-                ? 'bg-white text-emerald-600 shadow-sm' 
+                ? 'bg-white text-primary shadow-sm' 
                 : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -468,7 +468,7 @@ export default function EnquiryList({
         </div>
         <button 
           onClick={onCreateNew}
-          className={`bg-emerald-600 hover:bg-emerald-700 text-white ${isCompact ? 'p-1.5' : 'px-3 py-1.5'} rounded-md text-xs font-bold flex items-center gap-2 transition-colors`}
+          className={`bg-primary hover:bg-primary/90 text-white ${isCompact ? 'p-1.5' : 'px-3 py-1.5'} rounded-md text-xs font-bold flex items-center gap-2 transition-colors`}
           title={isCompact ? "CREATE NEW ENQUIRY" : ""}
         >
           <Plus size={16} />
@@ -484,7 +484,7 @@ export default function EnquiryList({
             ref={searchInputRef}
             type="text"
             placeholder={isCompact ? "Search..." : "Search Enquiry ID, Customer, Overview..."}
-            className="w-full pl-9 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            className="w-full pl-9 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -514,7 +514,7 @@ export default function EnquiryList({
                   }
                   setShowTypeMenu(!showTypeMenu);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${typeFilter ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                 title={typeFilter ? `Type: ${typeFilter}` : 'Type: All'}
               >
                 <Tag size={14} className="md:hidden" />
@@ -527,7 +527,7 @@ export default function EnquiryList({
                 }`}>
                   <button
                     onClick={() => { setTypeFilter(''); setShowTypeMenu(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === '' ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
                     All Types
                     {typeFilter === '' && <Check size={12} />}
@@ -536,7 +536,7 @@ export default function EnquiryList({
                     <button
                       key={t}
                       onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${typeFilter === t ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                     >
                       {t}
                       {typeFilter === t && <Check size={12} />}
@@ -557,7 +557,7 @@ export default function EnquiryList({
                 }
                 setShowRevMenu(!showRevMenu);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap ${revenueFilter.length > 0 ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
               title={revenueFilter.length > 0 ? `Rev Role: ${revenueFilter.length} selected` : 'Rev Role: All'}
             >
               <div className={`flex items-center gap-1 ${isCompact ? "" : "md:hidden"}`}>
@@ -573,7 +573,7 @@ export default function EnquiryList({
               }`}>
                 <button
                   onClick={() => { setRevenueFilter([]); setShowRevMenu(false); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.length === 0 ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.length === 0 ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   All Roles
                   {revenueFilter.length === 0 && <Check size={12} />}
@@ -587,7 +587,7 @@ export default function EnquiryList({
                         : [...revenueFilter, u.id];
                       setRevenueFilter(newFilter);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.includes(u.id) ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded transition-colors ${revenueFilter.includes(u.id) ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                   >
                     {u.name}
                     {revenueFilter.includes(u.id) && <Check size={12} />}
@@ -598,7 +598,7 @@ export default function EnquiryList({
           </div>
 
           <div className="relative" ref={filterMenuRef}>
-            <div className={`flex items-center rounded transition-colors ${activeFilters.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
+            <div className={`flex items-center rounded transition-colors ${activeFilters.length > 0 ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-700'}`}>
               <button 
                 onClick={() => {
                   if (!showFilterMenu && filterMenuRef.current) {
@@ -613,7 +613,7 @@ export default function EnquiryList({
                 <Filter size={14} />
                 <span className={isCompact ? "hidden" : "hidden md:inline"}>Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>
                 {activeFilters.length > 0 && (
-                  <span className={`flex items-center justify-center bg-emerald-600 text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none ${isCompact ? "" : "md:hidden"}`}>
+                  <span className={`flex items-center justify-center bg-primary text-white text-[9px] w-3.5 h-3.5 rounded-full leading-none ${isCompact ? "" : "md:hidden"}`}>
                     {activeFilters.length}
                   </span>
                 )}
@@ -621,7 +621,7 @@ export default function EnquiryList({
               {activeFilters.length > 0 && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); clearFilters(); }}
-                  className="px-1.5 py-1.5 hover:bg-emerald-200 rounded-r border-l border-emerald-200 transition-colors"
+                  className="px-1.5 py-1.5 hover:bg-primary/30 rounded-r border-l border-primary/20 transition-colors"
                   title="Clear All Filters"
                 >
                   <X size={14} />
@@ -638,9 +638,9 @@ export default function EnquiryList({
                     <div className="px-1 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Active Filters</div>
                     <div className="flex flex-wrap gap-1.5">
                       {activeFilters.map(pill => (
-                        <div key={pill.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-white text-emerald-700 border border-emerald-100 rounded text-[10px] font-bold">
+                        <div key={pill.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-white text-primary border border-primary/20 rounded text-[10px] font-bold">
                           <span className="max-w-[120px] truncate">{pill.label}</span>
-                          <button onClick={pill.onClear} className="hover:text-emerald-900 transition-colors">
+                          <button onClick={pill.onClear} className="hover:text-primary transition-colors">
                             <X size={10} />
                           </button>
                         </div>
@@ -654,10 +654,10 @@ export default function EnquiryList({
                     <div key={cat.id} className="border-b border-gray-50 last:border-0">
                       <button
                         onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 text-xs transition-colors ${activeCategory === cat.id ? 'bg-emerald-50/50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 text-xs transition-colors ${activeCategory === cat.id ? 'bg-primary/5 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <div className="flex items-center gap-2">
-                          <cat.icon size={14} className={activeCategory === cat.id ? 'text-emerald-500' : 'text-gray-400'} />
+                          <cat.icon size={14} className={activeCategory === cat.id ? 'text-primary' : 'text-gray-400'} />
                           <span>{cat.label}</span>
                         </div>
                         <ChevronDown size={12} className={`text-gray-400 transition-transform ${activeCategory === cat.id ? 'rotate-180' : ''}`} />
@@ -702,12 +702,12 @@ export default function EnquiryList({
                 onClick={() => onEnquiryClick(enq)}
                 className={`cursor-pointer transition-colors group relative align-top ${
                   activeEnquiryId === enq.id 
-                    ? 'bg-emerald-50/60 hover:bg-emerald-100/40' 
+                    ? 'bg-primary/5 hover:bg-primary/10' 
                     : 'bg-white hover:bg-gray-50'
                 }`}
               >
                 <td className={`px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 text-[11px] font-semibold sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors ${
-                  activeEnquiryId === enq.id ? 'bg-inherit border-l-[3px] border-emerald-600' : 'bg-inherit border-l-[3px] border-transparent'
+                  activeEnquiryId === enq.id ? 'bg-inherit border-l-[3px] border-primary' : 'bg-inherit border-l-[3px] border-transparent'
                 }`}>
                   {enq.customerName}
                 </td>
@@ -730,7 +730,7 @@ export default function EnquiryList({
                     })}
                   </div>
                 </td>
-                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 font-mono text-[11px] font-bold text-primary whitespace-nowrap">
                   {enq.id}
                 </td>
                 {statusTab === 'Converted' && (
@@ -739,9 +739,7 @@ export default function EnquiryList({
                   </td>
                 )}
                 <td className="px-2 min-[height:801px]:px-4 py-0.5 min-[height:801px]:py-1.5 border-r border-gray-100 whitespace-nowrap">
-                  <span className={`px-2 py-0 rounded-full text-[9px] font-bold uppercase ${
-                    enq.type === 'MTO' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
-                  }`}>
+                  <span className="px-2 py-0 rounded-full text-[9px] font-bold uppercase bg-gray-100 text-gray-800 border border-gray-200">
                     {enq.type}
                   </span>
                 </td>
