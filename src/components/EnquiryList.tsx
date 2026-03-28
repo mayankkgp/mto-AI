@@ -90,6 +90,28 @@ export default function EnquiryList({
   const revMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const prevActiveEnquiryIdRef = useRef<string | null>(null);
+  const prevActiveEnquiryStatusRef = useRef<EnquiryStatus | null>(null);
+
+  useEffect(() => {
+    if (activeEnquiryId) {
+      const activeEnquiry = enquiries.find(e => e.id === activeEnquiryId);
+      if (activeEnquiry) {
+        if (
+          (prevActiveEnquiryIdRef.current === activeEnquiryId && prevActiveEnquiryStatusRef.current !== activeEnquiry.status) ||
+          (prevActiveEnquiryIdRef.current !== activeEnquiryId)
+        ) {
+          setStatusTab(activeEnquiry.status);
+        }
+        prevActiveEnquiryStatusRef.current = activeEnquiry.status;
+        prevActiveEnquiryIdRef.current = activeEnquiryId;
+      }
+    } else {
+      prevActiveEnquiryStatusRef.current = null;
+      prevActiveEnquiryIdRef.current = null;
+    }
+  }, [activeEnquiryId, enquiries]);
+
   // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

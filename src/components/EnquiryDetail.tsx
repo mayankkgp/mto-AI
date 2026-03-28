@@ -19,7 +19,8 @@ import {
   FileSpreadsheet,
   File,
   UserPlus,
-  Check
+  Check,
+  RotateCcw
 } from 'lucide-react';
 import { Enquiry, ActionItem, Customer, User, EnquiryType, LeadChannel } from '../types';
 import { MOCK_CUSTOMERS, MOCK_USERS } from '../mockData';
@@ -190,6 +191,14 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
         setActionValidationErrors([]);
         setEditingAction(null);
       }
+    } else if (enquiry?.id === internalEnquiry?.id && enquiry?.status !== internalEnquiry?.status) {
+      setInternalEnquiry(enquiry);
+      setDisplayEnquiry(enquiry);
+      setFormData(enquiry || getDefaultFormData(nextEnquiryId));
+      setValidationErrors([]);
+      setNewAction({ text: '', date: '', remark: '', type: 'revenue' });
+      setActionValidationErrors([]);
+      setEditingAction(null);
     }
   }, [enquiry, internalEnquiry, isDirty, showAutoSaveError, showValidationModal, nextEnquiryId, onSave, formData]);
 
@@ -299,6 +308,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
   const [showDropModal, setShowDropModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
   const [dropReason, setDropReason] = useState('');
   const [actionValidationErrors, setActionValidationErrors] = useState<string[]>([]);
   const [editingAction, setEditingAction] = useState<{ id: string; field: 'action' | 'dueDate' | 'remark' } | null>(null);
@@ -854,7 +864,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
           {isReadOnly ? (
             <button 
               onClick={() => {
-                setFormData(prev => ({ ...prev, status: 'Active' }));
+                setShowReopenModal(true);
               }}
               className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-[11px] font-bold rounded flex items-center gap-1.5 transition-colors"
             >
@@ -1783,6 +1793,59 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     className="px-4 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                   >
                     CONFIRM DROP
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Reopen Confirmation Modal */}
+        <AnimatePresence>
+          {showReopenModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden"
+              >
+                <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-blue-50">
+                  <RotateCcw className="text-blue-600" size={20} />
+                  <h3 className="font-bold text-blue-900">Re-open Enquiry</h3>
+                </div>
+                <div className="p-4">
+                  <p className="text-xs text-gray-600 font-medium">Are you sure you want to re-open this item? This will restore all editing capabilities and move it back to the active list.</p>
+                </div>
+                <div className="p-4 bg-gray-50 flex justify-end gap-2">
+                  <button 
+                    onClick={() => setShowReopenModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      setShowReopenModal(false);
+                      const updatedEnquiry = { ...formData, status: 'Active' as const } as Enquiry;
+                      
+                      isSavingRef.current = true;
+                      setIsSavingUI(true);
+                      try {
+                        await onSave(updatedEnquiry);
+                        setFormData(updatedEnquiry);
+                        setInternalEnquiry(updatedEnquiry);
+                        setDisplayEnquiry(updatedEnquiry);
+                      } catch (error) {
+                        setShowAutoSaveError(true);
+                      } finally {
+                        isSavingRef.current = false;
+                        setIsSavingUI(false);
+                      }
+                    }}
+                    className="px-4 py-2 text-xs font-bold bg-[#1E40AF] text-white hover:bg-blue-900 rounded-lg transition-colors"
+                  >
+                    Confirm Re-open
                   </button>
                 </div>
               </motion.div>
