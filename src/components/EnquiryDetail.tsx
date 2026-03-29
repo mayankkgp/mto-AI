@@ -946,7 +946,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="relative">
                   <input 
                     list="customers"
-                    className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] font-semibold outline-none focus:ring-0`}
+                    className={`block w-full px-1 h-[26px] min-h-[26px] py-1 bg-white border ${validationErrors.includes('customerName') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] font-semibold outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                     value={formData.customerName}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                     disabled={isReadOnly}
@@ -973,7 +973,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0 col-span-2">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                               disabled={isReadOnly}
@@ -982,7 +982,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                               disabled={isReadOnly}
@@ -991,7 +991,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                               disabled={isReadOnly}
@@ -1003,7 +1003,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">City *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('city') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.city}
                               onChange={(e) => setFormData({...formData, city: e.target.value})}
                               disabled={isReadOnly}
@@ -1012,7 +1012,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">POC *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('poc') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.poc}
                               onChange={(e) => setFormData({...formData, poc: e.target.value})}
                               disabled={isReadOnly}
@@ -1021,7 +1021,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <div className="space-y-0">
                             <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Contact *</label>
                             <input 
-                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0`}
+                              className={`block w-full px-1 h-[26px] bg-white border ${validationErrors.includes('contact') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                               value={formData.contact}
                               onChange={(e) => setFormData({...formData, contact: e.target.value})}
                               disabled={isReadOnly}
@@ -1040,7 +1040,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={overviewRef}
                   rows={1}
-                  className={`block w-full px-1 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 resize-none max-h-[80px]`}
+                  className={`block w-full px-1 py-1 bg-white border ${validationErrors.includes('leadOverview') ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-gray-200 focus:border-primary'} rounded text-[11px] outline-none focus:ring-0 resize-none max-h-[80px] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                   value={formData.leadOverview}
                   onChange={(e) => setFormData({...formData, leadOverview: e.target.value})}
                   placeholder="Brief overview of the lead..."
@@ -1054,7 +1054,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <textarea 
                   ref={detailsRef}
                   rows={1}
-                  className="block w-full px-1 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0 resize-none max-h-[80px]"
+                  className="block w-full px-1 py-1 bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0 resize-none max-h-[80px] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                   value={formData.leadDetails}
                   onChange={(e) => setFormData({...formData, leadDetails: e.target.value})}
                   placeholder="Detailed requirements, specifications, etc..."
@@ -1066,7 +1066,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Type *</label>
-                  <div className={`flex items-stretch bg-gray-100 border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50 focus-within:border-red-600' : 'border-gray-200 focus-within:border-primary'} rounded h-[26px] p-0.5 focus-within:ring-0 transition-colors`}>
+                  <div className={`flex bg-white p-0.5 rounded border ${validationErrors.includes('type') ? 'border-red-500 bg-red-50 focus-within:border-red-600' : 'border-gray-200 focus-within:border-[#1E40AF]'} h-[26px] focus-within:ring-0 transition-colors ${isReadOnly ? 'cursor-not-allowed' : ''}`}>
                     {(['MTO', 'Ready'] as EnquiryType[]).map((t) => (
                       <button
                         key={t}
@@ -1075,9 +1075,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         onClick={() => setFormData({...formData, type: t})}
                         className={`flex-1 h-full flex items-center justify-center px-1 tracking-tight text-[10px] font-bold rounded transition-all ${
                           formData.type === t 
-                          ? 'bg-white text-primary shadow-sm' 
-                          : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                          ? (isReadOnly ? 'bg-gray-200 text-gray-500 shadow-sm' : 'bg-[#1E40AF] text-white shadow-sm')
+                          : `text-gray-500 ${!isReadOnly ? 'hover:bg-gray-200' : ''}`
+                        } ${isReadOnly ? 'cursor-not-allowed' : ''}`}
                       >
                         {t}
                       </button>
@@ -1088,7 +1088,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Lead Date</label>
                   <input 
                     type="date"
-                    className="block w-full px-1 py-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-primary focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
+                    className="block w-full px-1 py-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[10px] outline-none focus:border-primary focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                     value={formData.leadDate}
                     onChange={(e) => {
                       setFormData({...formData, leadDate: e.target.value});
@@ -1100,7 +1100,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Channel</label>
                   <select 
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                     value={formData.leadChannel || ''}
                     onChange={(e) => setFormData({...formData, leadChannel: e.target.value as LeadChannel})}
                     disabled={isReadOnly}
@@ -1182,7 +1182,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Order Value (₹)</label>
                   <input 
                     type="text"
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-primary focus:ring-0 text-left"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] font-bold outline-none focus:border-primary focus:ring-0 text-left disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                     value={formatInputCurrency(formData.orderValue)}
                     onChange={(e) => {
                       const input = e.target;
@@ -1214,7 +1214,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                 <div className="space-y-0">
                   <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-gray-500 min-[resolution:1.5dppx]:text-gray-400 uppercase">Prob (%)</label>
                   <select 
-                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0"
+                    className="block w-full px-1 h-[26px] tracking-tight bg-white border border-gray-200 rounded text-[11px] outline-none focus:border-primary focus:ring-0 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                     value={formData.conversionProbability || ''}
                     onChange={(e) => setFormData({...formData, conversionProbability: e.target.value ? Number(e.target.value) : undefined})}
                     disabled={isReadOnly}
@@ -1248,20 +1248,20 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     }}
                     disabled={isReadOnly}
                   >
-                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors`}>
+                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border ${validationErrors.includes('revenueRoles') ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded min-h-[26px] transition-colors ${isReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'hover:border-primary/40 group-focus:border-primary'}`}>
                       {formData.revenueRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
                           <div 
                             key={uid} 
-                            className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded text-[9px] font-bold border border-gray-200"
+                            className={`px-1 py-0.5 rounded text-[9px] font-bold border ${isReadOnly ? 'bg-gray-200 text-gray-500 border-gray-300' : 'bg-gray-100 text-gray-600 border-gray-200'}`}
                             title={user?.name}
                           >
                             {user ? getInitials(user.name) : '??'}
                           </div>
                         );
                       })}
-                      <div className="p-0.5 text-gray-400 hover:text-primary">
+                      <div className={`p-0.5 ${isReadOnly ? 'text-gray-300' : 'text-gray-400 hover:text-primary'}`}>
                         <UserPlus size={12} />
                       </div>
                     </div>
@@ -1282,20 +1282,20 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                     }}
                     disabled={isReadOnly}
                   >
-                    <div className="flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] hover:border-primary/40 group-focus:border-primary transition-colors">
+                    <div className={`flex flex-wrap items-center gap-1 p-[2px] bg-white border border-gray-200 rounded min-h-[26px] transition-colors ${isReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'hover:border-primary/40 group-focus:border-primary'}`}>
                       {formData.supplyRoles?.map(uid => {
                         const user = MOCK_USERS.find(u => u.id === uid);
                         return (
                           <div 
                             key={uid} 
-                            className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded text-[9px] font-bold border border-gray-200"
+                            className={`px-1 py-0.5 rounded text-[9px] font-bold border ${isReadOnly ? 'bg-gray-200 text-gray-500 border-gray-300' : 'bg-gray-100 text-gray-600 border-gray-200'}`}
                             title={user?.name}
                           >
                             {user ? getInitials(user.name) : '??'}
                           </div>
                         );
                       })}
-                      <div className="p-0.5 text-gray-400 hover:text-primary">
+                      <div className={`p-0.5 ${isReadOnly ? 'text-gray-300' : 'text-gray-400 hover:text-primary'}`}>
                         <UserPlus size={12} />
                       </div>
                     </div>
@@ -1308,6 +1308,16 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
 
           {/* Right: Action Items (Pinned/Sticky) */}
           <div className="flex flex-col bg-gray-50/50 overflow-hidden border-l border-gray-100">
+            {/* Drop Reason Block */}
+            {formData.status === 'Dropped' && formData.dropReason && (
+              <div className="bg-[#FEF2F2] border-b border-[#FECACA] p-3 min-[height:801px]:p-4 shrink-0">
+                <label className="block text-[10px] min-[resolution:1.5dppx]:text-[9px] font-bold text-[#991B1B] uppercase tracking-wider mb-1">Reason for Drop</label>
+                <p className="text-[11px] text-[#7F1D1D] leading-relaxed whitespace-pre-wrap break-words">
+                  {formData.dropReason}
+                </p>
+              </div>
+            )}
+
             {/* Unified Task Creation */}
             {!isReadOnly && (
               <div className="p-1.5 min-[height:801px]:p-3 border-b border-gray-200 bg-white shadow-sm">
@@ -1353,7 +1363,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         <textarea 
                           rows={1}
                           placeholder="Additional notes..."
-                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-primary focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                          className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-primary focus:ring-0 placeholder:not-italic placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                           value={newAction.remark}
                           onChange={(e) => {
                             setNewAction({...newAction, remark: e.target.value});
@@ -1478,7 +1488,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           <textarea 
                             rows={1}
                             placeholder="Additional notes..."
-                            className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-[#1E40AF] focus:ring-0 placeholder:not-italic placeholder:text-gray-400`}
+                            className={`block w-full bg-white border border-gray-200 rounded px-1 py-1 text-[11px] outline-none italic resize-none transition-colors h-[26px] min-h-[26px] max-h-[80px] overflow-y-auto focus:border-[#1E40AF] focus:ring-0 placeholder:not-italic placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed`}
                             value={newAction.remark}
                             onChange={(e) => {
                               setNewAction({...newAction, remark: e.target.value});
@@ -1530,9 +1540,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
                         key={item.id} 
-                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : isReadOnly ? 'bg-gray-50 border-gray-200 cursor-not-allowed' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
-                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'revenue')} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-default' : 'hover:bg-gray-100'}`}>
+                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'revenue')} disabled={isReadOnly} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-not-allowed' : 'hover:bg-gray-100'}`}>
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-[#059669]" /> : <Circle size={14} className={`text-gray-300 ${!isReadOnly ? 'hover:text-[#1E40AF]/80' : ''}`} />}
                         </button>
                         <div className="flex-1 min-w-0">
@@ -1540,7 +1550,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : `text-gray-500 ${!isReadOnly ? 'hover:underline' : 'pointer-events-none'}`}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer disabled:cursor-not-allowed ${item.isCompleted ? 'text-gray-400 pointer-events-none' : isReadOnly ? 'text-gray-400' : 'text-gray-500 hover:underline'}`}
                               value={item.dueDate}
                               disabled={item.isCompleted || isReadOnly}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
@@ -1568,7 +1578,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : `text-gray-800 ${!isReadOnly ? 'cursor-text hover:text-[#1E40AF]' : ''}`}`}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : isReadOnly ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 cursor-text hover:text-[#1E40AF]'}`}
                               >
                                 {item.action}
                               </p>
@@ -1598,7 +1608,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           ) : (
                             <p 
                               onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : `text-gray-500 ${!isReadOnly ? 'cursor-text hover:text-gray-700' : ''}`}`}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : isReadOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
                               {item.remark || (item.isCompleted || isReadOnly ? '' : '+ Add remark')}
                             </p>
@@ -1631,9 +1641,9 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
                         key={item.id} 
-                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
+                        className={`flex items-start gap-1.5 p-1.5 rounded border transition-all ${item.isCompleted ? 'bg-gray-50 border-gray-100 opacity-60' : isReadOnly ? 'bg-gray-50 border-gray-200 cursor-not-allowed' : 'bg-white border-gray-200 shadow-sm hover:border-primary/20'}`}
                       >
-                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'supply')} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-default' : 'hover:bg-gray-100'}`}>
+                        <button onClick={() => !isReadOnly && toggleActionCompletion(item.id, 'supply')} disabled={isReadOnly} className={`shrink-0 min-w-[24px] min-h-[24px] flex items-center justify-center rounded ${isReadOnly ? 'cursor-not-allowed' : 'hover:bg-gray-100'}`}>
                           {item.isCompleted ? <CheckCircle2 size={14} className="text-[#059669]" /> : <Circle size={14} className={`text-gray-300 ${!isReadOnly ? 'hover:text-[#1E40AF]/80' : ''}`} />}
                         </button>
                         <div className="flex-1 min-w-0">
@@ -1641,7 +1651,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             {/* Floated Due Date */}
                             <input 
                               type="date"
-                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${item.isCompleted ? 'text-gray-400 pointer-events-none' : `text-gray-500 ${!isReadOnly ? 'hover:underline' : 'pointer-events-none'}`}`}
+                              className={`relative float-right ml-2 mb-1 bg-transparent border-none outline-none focus:underline p-0 cursor-pointer text-[9px] font-bold [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer disabled:cursor-not-allowed ${item.isCompleted ? 'text-gray-400 pointer-events-none' : isReadOnly ? 'text-gray-400' : 'text-gray-500 hover:underline'}`}
                               value={item.dueDate}
                               disabled={item.isCompleted || isReadOnly}
                               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
@@ -1669,7 +1679,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                             ) : (
                               <p 
                                 onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'action' })}
-                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : `text-gray-800 ${!isReadOnly ? 'cursor-text hover:text-[#1E40AF]' : ''}`}`}
+                                className={`text-[11px] mt-1 font-bold break-words leading-tight ${item.isCompleted ? 'line-through text-gray-400' : isReadOnly ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 cursor-text hover:text-[#1E40AF]'}`}
                               >
                                 {item.action}
                               </p>
@@ -1699,7 +1709,7 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                           ) : (
                             <p 
                               onClick={() => !isReadOnly && !item.isCompleted && setEditingAction({ id: item.id, field: 'remark' })}
-                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : `text-gray-500 ${!isReadOnly ? 'cursor-text hover:text-gray-700' : ''}`}`}
+                              className={`text-[10px] mt-0.5 italic leading-tight block ${item.isCompleted ? 'text-gray-400' : isReadOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-500 cursor-text hover:text-gray-700'}`}
                             >
                               {item.remark || (item.isCompleted || isReadOnly ? '' : '+ Add remark')}
                             </p>
@@ -1936,15 +1946,17 @@ export default function EnquiryDetail({ enquiry, nextEnquiryId, onClose, onSave,
                   >
                     <Download size={20} />
                   </button>
-                  <button 
-                    onClick={() => {
-                      setShowDeleteConfirm(true);
-                    }}
-                    className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-full text-white backdrop-blur-md transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  {!isReadOnly && (
+                    <button 
+                      onClick={() => {
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-full text-white backdrop-blur-md transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
                   <button 
                     onClick={() => setLightboxFile(null)}
                     className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-colors ml-2"
